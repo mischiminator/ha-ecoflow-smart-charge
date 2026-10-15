@@ -18,6 +18,6 @@ Stable entity keys (unique_id = entry_id + '_' + key):
 - select: mode (shadow only selectable; active readback after explicit cutover service; cannot bypass service).
 - button: recalculate. No recovery button that implicitly authorizes writes.
 
-No private defaults. Entity names are human-readable English; existing keys can have translations added by packaging. Sensors with unavailable plan are unknown, never fabricated zero projections.
+No private defaults. Native entity names use supported HA translation keys and the shipped EN/DE inventories, verified against the real registry for all six platforms during integration reconciliation. Unique IDs remain unchanged; raw state/reason codes are not localized. Sensors with unavailable plan are unknown, never fabricated zero projections.
 
 Config source selections: grid_energy_entity, pv_entity, price_entity, price_window_entity, forecast_today_entity, forecast_remaining_entity, forecast_tomorrow_entity, sun_entity; ordered triples soc_entities/reserve_entities/self_powered_entities/operating_mode_entities/charge_energy_entities/discharge_energy_entities; tariff_key explicit string; legacy_writer_entities explicit nonempty list of automation entities. Slot order must match across every triple. Reconfigure mappings only without a pending journal. Options: master, bounded numbers, mode restricted to shadow; options cannot activate hardware.

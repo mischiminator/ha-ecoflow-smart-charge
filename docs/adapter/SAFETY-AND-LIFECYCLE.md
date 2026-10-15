@@ -97,8 +97,9 @@ the journal before supported options updates. Preview and apply never command
 hardware. Existing dashboards and source repositories remain unchanged.
 See ENTITY-SERVICE-CONTRACT.md and ../migration/ACTIONS-IMPORT.md. Card support is
 an explicit opt-in adaptation specification, not a shipped JavaScript patch.
-Native entity display names currently remain English; EN/DE flow/service metadata
-is provided separately. Do not claim entity translation hooks are implemented.
+Integration reconciliation connected native entity translation keys to complete
+EN/DE inventories; a real HA registry test covers all six platforms. Stable unique
+IDs are unchanged. Raw reason/status machine codes remain untranslated.
 
 ## Verification boundary
 

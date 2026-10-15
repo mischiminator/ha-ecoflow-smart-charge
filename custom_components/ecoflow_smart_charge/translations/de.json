@@ -185,6 +185,18 @@
       },
       "full_marker_day": {
         "name": "Volladungsmarker-Tag"
+      },
+      "solar_day": {
+        "name": "Geplanter Solartag"
+      },
+      "plan_updated": {
+        "name": "Plan aktualisiert"
+      },
+      "profile_samples": {
+        "name": "Profilstichproben"
+      },
+      "corrected_forecast_kwh": {
+        "name": "Korrigierte Solarprognose"
       }
     },
     "binary_sensor": {
@@ -202,6 +214,9 @@
       },
       "permission": {
         "name": "Ladefreigabe"
+      },
+      "session_active": {
+        "name": "Ladesitzung aktiv"
       }
     },
     "number": {

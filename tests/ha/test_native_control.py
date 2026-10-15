@@ -1,5 +1,6 @@
 """Native services drive the actual source reader/core/journal/executor chain."""
 
+import asyncio
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
@@ -12,7 +13,8 @@ from custom_components.ecoflow_smart_charge.const import DOMAIN
 
 
 @pytest.mark.usefixtures("enable_custom_integrations")
-async def test_native_cutover_conflict_and_verified_restoration(hass, freezer):
+@pytest.mark.parametrize("requests", [1, 4])
+async def test_native_cutover_conflict_and_verified_restoration(hass, freezer, requests):
     freezer.move_to("2026-01-04T20:01:01+00:00")
     now = datetime.now(UTC)
     data = data_states(hass, now)
@@ -73,7 +75,12 @@ async def test_native_cutover_conflict_and_verified_restoration(hass, freezer):
         await hass.services.async_call(
             DOMAIN, "request_cutover", {**target, "confirmed": True}, blocking=True
         )
-        await hass.services.async_call(DOMAIN, "recalculate", target, blocking=True)
+        await asyncio.gather(
+            *(
+                hass.services.async_call(DOMAIN, "recalculate", target, blocking=True)
+                for _ in range(requests)
+            )
+        )
         assert len(calls) == 3 and runtime.journal.record
         # A configured competing writer becoming enabled must prevent ANY further command.
         hass.states.async_set("automation.legacy", "on")

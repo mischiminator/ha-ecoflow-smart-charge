@@ -41,7 +41,7 @@ Reproduce with absolute variables for YOUR isolated work directory; these comman
 
 Set `WORK` to an isolated scratch directory, `REPO` to the absolute product checkout, `TEST_PYTHON` to the existing locked test interpreter, and `TEST_SITE_PACKAGES` to that interpreter's site-packages directory (discover with `TEST_PYTHON -c 'import site; print(site.getsitepackages()[0])'`, substituting its actual executable). The extra PYTHONPATH makes the verified HA packages available without modifying them. Pin/check the Core commit above. This source run verifies the declared tested Core version, not every future mutable hassfest image.
 
-Executed result at packaging time: Exit0, 1 integration, 0 invalid; warning that adapter `async_setup` lacks CONFIG_SCHEMA. Adapter/reconciliation owns that warning. Re-run after final entity/service keys are settled.
+Historical packaging result: Exit0, 1 integration, 0 invalid, with CONFIG_SCHEMA warning. Final integration rerun after adapter CONFIG_SCHEMA and entity/locale alignment: Exit0, 1 integration, 0 invalid, no warning; all 23 validators executed. See INTEGRATION-REPORT.md for final evidence; historical lane reports are not the final gate.
 
 ## Official HACS Action
 

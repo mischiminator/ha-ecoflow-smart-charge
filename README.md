@@ -4,7 +4,7 @@ Native Home Assistant orchestration of three batteries through entities supplied
 
 ## Status / Entwicklungsstand
 
-Implementation candidate, not a published release or an approved live controller. Packaging checks do not prove behavioral parity. Core/HA work is developed in parallel; the integration task must reconcile the [interface](docs/foundation/INTERFACE.md), translations, services and [35 parity criteria](docs/foundation/PARITY.md) against actual code before release. Do not activate this candidate on production hardware.
+Locally integrated and tested candidate, not a published release or an approved live controller. The [final integration report](docs/release/INTEGRATION-REPORT.md) and [35-row evidence matrix](docs/release/PARITY-FINAL.md) record real planner, HA, lifecycle, migration, privacy and validator results. Full HACS execution, separately sanitized publication history, rights review, live source transition and supervised commissioning remain open. Do not activate this candidate on production hardware.
 
 Implementierungskandidat, keine freigegebene Produktivversion. Shadow ist der verpflichtende Standard. Ein grüner Packaging-Test ist keine Freigabe zum Laden. Migration, Import, Kartenanpassung und Recovery müssen mit dem fertig integrierten Code nachgewiesen sein. Fehlende Import-/Vergleichsfunktionen sind eine Cutover-Sperre, kein Anlass für manuelle Speicheränderungen.
 

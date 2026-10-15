@@ -185,6 +185,18 @@
       },
       "full_marker_day": {
         "name": "Full marker day"
+      },
+      "solar_day": {
+        "name": "Planned solar day"
+      },
+      "plan_updated": {
+        "name": "Plan updated"
+      },
+      "profile_samples": {
+        "name": "Profile samples"
+      },
+      "corrected_forecast_kwh": {
+        "name": "Corrected solar forecast"
       }
     },
     "binary_sensor": {
@@ -202,6 +214,9 @@
       },
       "permission": {
         "name": "Charge permission"
+      },
+      "session_active": {
+        "name": "Charging session active"
       }
     },
     "number": {

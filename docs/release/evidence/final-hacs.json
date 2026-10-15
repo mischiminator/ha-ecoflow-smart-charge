@@ -1,0 +1,8 @@
+{
+  "executed": false,
+  "status": "OPEN: not passed",
+  "docker_path": null,
+  "public_repository_publication_authorized": false,
+  "official_action_commit": "1ebf01c408f29afcb6406bd431bc98fd8cbb15aa",
+  "reason": "Docker unavailable; full HACS network repository checks require future authorized public repository. Offline packaging tests are not official HACS validation."
+}

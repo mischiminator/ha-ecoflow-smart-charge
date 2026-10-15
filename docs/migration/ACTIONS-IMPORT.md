@@ -27,4 +27,4 @@ The synthetic JSON is checked with the real `validate_import` function in a pack
 
 ## Human-readable names
 
-Entity name translations are provided for the adapter's stable keys. The current runtime entity class still sets explicit English names; final reconciliation must connect translation keys using supported HA entity APIs or document English-only entity names. Merely shipping JSON does not prove the UI is translated. Never rename unique IDs or reassign targets just to change a label.
+All native entities now expose supported HA translation keys and matching English/German names, including session_active and the four added planning sensors. A real HA registry test verifies every platform/key against all shipped inventories. Unique IDs are unchanged; existing operator-assigned names/entity IDs are not rewritten. Raw decision/status machine codes are not localized. Never reassign targets just to change a label.
