@@ -1,0 +1,19 @@
+{% set cost = current / efficiency + wear if efficiency > 0 else 999 %}
+{# Unpriced remaining energy contributes ZERO estimated saving, not an invented quote. #}
+{% set coverage_fraction = ([projection.coverage / projection.target_ac, 1] | min) if projection.target_ac > 0 else 0 %}
+{% set saving = (avoided_price - cost) * coverage_fraction %}
+{% set price_advantage = (avoided_price - current) / avoided_price * 100 if avoided_price > 0 else none %}
+{% set reason = 'Ladefreigabe' %}
+{% if not data_valid %}{% set reason = 'Daten fehlen oder sind unplausibel' %}
+{% elif completed %}{% set reason = 'Fuer diesen Solartag bereits vollgeladen' %}
+{% elif needed <= 0 %}{% set reason = 'Batterien voll' %}
+{% elif current > ceiling %}{% set reason = 'Preis ueber Obergrenze' %}
+{% elif not active and solar_surplus >= needed %}{% set reason = 'Solarueberschuss reicht zum Volladen' %}
+{% elif not bestprice_window %}{% set reason = 'Warte auf Bestpreisfenster' %}
+{% elif not covered %}{% set reason = 'Kein nutzbarer Verbrauch im bekannten Preisfenster' %}
+{% elif min_price_advantage < 0 or min_price_advantage > 100 %}{% set reason = 'Mindest-Preisvorteil nicht verfuegbar' %}
+{% elif avoided_price <= 0 %}{% set reason = 'Preisvergleich bei Referenzpreis <= 0 nicht definiert' %}
+{% elif price_advantage + 0.000000001 < min_price_advantage %}{% set reason = 'Preisvorteil unter Mindestwert' %}
+{% elif saving < margin %}{% set reason = 'Nettoersparnis zu gering' %}
+{% endif %}
+{{ {'allow': reason == 'Ladefreigabe', 'reason': reason, 'saving': saving | round(3), 'cost': cost | round(3), 'price_advantage': price_advantage, 'min_price_advantage': min_price_advantage} | to_json }}

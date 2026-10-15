@@ -1,0 +1,732 @@
+F..........FF.........FF..F..........FFFFFFF............................ [ 42%]
+........................................................................ [ 84%]
+...........................                                              [100%]
+=================================== FAILURES ===================================
+___ IsolationTests.test_existing_core_import_has_no_homeassistant_dependency ___
+
+self = <test_core_isolation.IsolationTests testMethod=test_existing_core_import_has_no_homeassistant_dependency>
+
+    def test_existing_core_import_has_no_homeassistant_dependency(self):
+        tree = ast.parse(CORE.read_text())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                self.assertFalse((node.module or "").startswith("homeassistant"))
+            if isinstance(node, ast.Import):
+                self.assertTrue(all(not item.name.startswith("homeassistant") for item in node.names))
+        name = "foundation_isolated_core"
+        spec = importlib.util.spec_from_file_location(name, CORE)
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        try:
+>           spec.loader.exec_module(module)
+
+tests/foundation/test_core_isolation.py:26:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+<frozen importlib._bootstrap_external>:759: in exec_module
+    ???
+<frozen importlib._bootstrap>:491: in _call_with_frames_removed
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """HA-free planning primitives; no Home Assistant or I/O imports are permitted."""
+    from __future__ import annotations
+
+    from collections.abc import Iterable
+    from dataclasses import dataclass
+    from datetime import UTC, datetime, timedelta
+
+>   from .validation import aware, number
+E   ImportError: attempted relative import with no known parent package
+
+custom_components/ecoflow_smart_charge/planner/core.py:8: ImportError
+____________ test_valid_flow_and_options_do_not_allow_active_bypass ____________
+
+self = <homeassistant.config_entries.OptionsFlowManager object at 0x727d1026b4d0>
+flow_id = '51527fefb4d3b0475cce4041f4de597c', user_input = {'mode': 'active'}
+
+    async def _async_configure(
+        self, flow_id: str, user_input: dict | None = None
+    ) -> _FlowResultT:
+        """Continue a data entry flow."""
+        if (flow := self._progress.get(flow_id)) is None:
+            raise UnknownFlow
+
+        cur_step = flow.cur_step
+        assert cur_step is not None
+
+        if (
+            data_schema := cur_step.get("data_schema")
+        ) is not None and user_input is not None:
+            data_schema = cast(probatio.Schema, data_schema)
+            try:
+>               user_input = data_schema(user_input)
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/homeassistant/data_entry_flow.py:360:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/probatio/schema.py:342: in __call__
+    return self._compiled(data)
+           ^^^^^^^^^^^^^^^^^^^^
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/probatio/schema.py:466: in _bootstrap
+    return self._compiled(data)
+           ^^^^^^^^^^^^^^^^^^^^
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/probatio/schema.py:493: in validate
+    return interpreted(data)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <probatio._engine._MappingValidator object at 0x727d10adc940>
+data = {'mode': 'active'}
+
+    def __call__(self, data: Any) -> dict[Any, Any]:  # noqa: PLR0912
+        """Validate the mapping, gathering every error into one MultipleInvalid."""
+        # A plain dict is the common, hot case, so it short-circuits first.
+        # Anything else implementing the Mapping protocol (a MappingProxyType, a
+        # multidict, a custom mapping) is validated too, returning a plain dict;
+        # voluptuous accepts only dict, so this is a documented superset
+        # (carry-forward of voluptuous issue #299). A non-Mapping is rejected.
+        if not isinstance(data, dict) and not isinstance(data, Mapping):
+            raise DictInvalid(translation_key="expected_mapping")
+
+        # Preserve real dict subclasses, matching voluptuous. Other Mapping
+        # implementations validate too, but rebuild as a plain dict.
+        data_type = type(data)
+
+        if self._alias_lookup:
+            data = self._resolve_aliases(data)
+
+        out: dict[Any, Any] = (
+            {} if data_type is dict or not issubclass(data_type, dict) else data_type()
+        )
+        errors: list[Invalid] = []
+
+        # Track matches by candidate position. A bytearray is cheaper than a set
+        # here and lets the finalizer distinguish invalid keys from absent ones.
+        seen: bytearray | None = (
+            bytearray(len(self._candidates)) if self._track_seen else None
+        )
+
+        # Inline the literal-key fast path. More complex keys fall back to helpers.
+        fast_get = self._literal_fast.get
+        literal_get = self._literal.get
+        for key, value in data.items():
+            entry = fast_get(key)
+            if entry is not None:
+                index, value_type, check_value = entry
+                if seen is not None:
+                    seen[index] = 1
+                if value_type is not None:
+                    # Inlined ``{"k": <type>}``: isinstance, no validator call.
+                    if isinstance(value, value_type):
+                        out[key] = value
+                    else:
+                        errors.append(
+                            _type_error(value_type.__name__, [key], self._invalid_msg),
+                        )
+                    continue
+                try:
+                    out[key] = check_value(value)
+                except Invalid as exc:
+                    self._collect(key, exc, errors)
+                continue
+            match = literal_get(key)
+            if match is None:
+                self._match_validator(key, value, out, errors, seen)
+                continue
+            # Only Forbidden and Remove literal keys reach here; plain literal
+            # keys took the fast path above. ``_apply`` raises the forbidden
+            # error or validates the Remove value, and a Remove whose value fails
+            # has not consumed the key, so the type/callable candidates get a
+            # turn (a ``str: str`` may take it) and ``_match_validator`` applies
+            # the extra-key policy if none match.
+            index, candidate = match
+            if not self._apply(key, value, index, candidate, out, errors, seen):
+                self._match_validator(key, value, out, errors, seen)
+
+        if seen is not None:
+            self._finalize(out, errors, seen)
+        if self._has_groups and seen is not None:
+            self._check_groups(out, errors, seen)
+
+        if errors:
+            if self._secret_keys:
+                self._redact_secrets(errors)
+>           raise MultipleInvalid(errors)
+E           probatio.error.MultipleInvalid: value must be one of ['shadow'] at 'mode'
+
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/probatio/_engine.py:286: MultipleInvalid
+
+The above exception was the direct cause of the following exception:
+
+hass = <HomeAssistant RUNNING>
+
+    @pytest.mark.usefixtures('enable_custom_integrations')
+    async def test_valid_flow_and_options_do_not_allow_active_bypass(hass):
+        data=mapping(hass)
+        with patch('custom_components.ecoflow_smart_charge.async_setup_entry',return_value=True):
+            result=await hass.config_entries.flow.async_init(DOMAIN,context={'source':'user'},data=data)
+            assert result['type']=='create_entry'
+            entry=result['result']
+            options=await hass.config_entries.options.async_init(entry.entry_id)
+>           result=await hass.config_entries.options.async_configure(options['flow_id'],user_input={'mode':'active'})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/ha/test_native.py:37:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/homeassistant/data_entry_flow.py:339: in async_configure
+    result = await self._async_configure(flow_id, user_input)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <homeassistant.config_entries.OptionsFlowManager object at 0x727d1026b4d0>
+flow_id = '51527fefb4d3b0475cce4041f4de597c', user_input = {'mode': 'active'}
+
+    async def _async_configure(
+        self, flow_id: str, user_input: dict | None = None
+    ) -> _FlowResultT:
+        """Continue a data entry flow."""
+        if (flow := self._progress.get(flow_id)) is None:
+            raise UnknownFlow
+
+        cur_step = flow.cur_step
+        assert cur_step is not None
+
+        if (
+            data_schema := cur_step.get("data_schema")
+        ) is not None and user_input is not None:
+            data_schema = cast(probatio.Schema, data_schema)
+            try:
+                user_input = data_schema(user_input)
+            except probatio.Invalid as ex:
+                raised_errors = [ex]
+                if isinstance(ex, probatio.MultipleInvalid):
+                    raised_errors = ex.errors
+
+                schema_errors: dict[str, Any] = {}
+                for error in raised_errors:
+                    try:
+                        _map_error_to_schema_errors(schema_errors, error, data_schema)
+                    except ValueError:
+                        # If we get here, the path in the exception
+                        # does not exist in the schema.
+                        schema_errors.setdefault("base", []).append(str(error))
+>               raise InvalidData(
+                    "Schema validation failed",
+                    path=ex.path,
+                    error_message=ex.error_message,
+                    schema_errors=schema_errors,
+                ) from ex
+E               homeassistant.data_entry_flow.InvalidData: Schema validation failed at 'mode'
+
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/homeassistant/data_entry_flow.py:374: InvalidData
+---------------------------- Captured stderr setup -----------------------------
+INFO:homeassistant.loader:Loaded homeassistant from homeassistant.components.homeassistant
+------------------------------ Captured log setup ------------------------------
+INFO     homeassistant.loader:loader.py:801 Loaded homeassistant from homeassistant.components.homeassistant
+----------------------------- Captured stderr call -----------------------------
+INFO:homeassistant.loader:Loaded ecoflow_smart_charge from custom_components.ecoflow_smart_charge
+WARNING:homeassistant.loader:We found a custom integration ecoflow_smart_charge which has not been tested by Home Assistant. This component might cause stability problems, be sure to disable it if you experience issues with Home Assistant
+INFO:homeassistant.setup:Setting up ecoflow_smart_charge
+------------------------------ Captured log call -------------------------------
+INFO     homeassistant.loader:loader.py:801 Loaded ecoflow_smart_charge from custom_components.ecoflow_smart_charge
+WARNING  homeassistant.loader:loader.py:716 We found a custom integration ecoflow_smart_charge which has not been tested by Home Assistant. This component might cause stability problems, be sure to disable it if you experience issues with Home Assistant
+INFO     homeassistant.setup:setup.py:393 Setting up ecoflow_smart_charge
+--------------------------- Captured stderr teardown ---------------------------
+ERROR:homeassistant.config_entries:Error unloading entry Synthetic controller for ecoflow_smart_charge
+Traceback (most recent call last):
+  File "/opt/data/tools/ha-integration-tests/.venv/lib/python3.14/site-packages/homeassistant/config_entries.py", line 1130, in async_unload
+    result = await component.async_unload_entry(hass, self)  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/data/projects/ha-ecoflow-smart-charge/custom_components/ecoflow_smart_charge/__init__.py", line 113, in async_unload_entry
+    runtime=entry.runtime_data
+            ^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigEntry' object has no attribute 'runtime_data'
+---------------------------- Captured log teardown -----------------------------
+ERROR    homeassistant.config_entries:config_entries.py:1148 Error unloading entry Synthetic controller for ecoflow_smart_charge
+Traceback (most recent call last):
+  File "/opt/data/tools/ha-integration-tests/.venv/lib/python3.14/site-packages/homeassistant/config_entries.py", line 1130, in async_unload
+    result = await component.async_unload_entry(hass, self)  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/data/projects/ha-ecoflow-smart-charge/custom_components/ecoflow_smart_charge/__init__.py", line 113, in async_unload_entry
+    runtime=entry.runtime_data
+            ^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigEntry' object has no attribute 'runtime_data'
+________________ test_real_entities_master_numbers_and_cleanup _________________
+
+hass = <HomeAssistant RUNNING>
+
+    @pytest.mark.usefixtures('enable_custom_integrations')
+    async def test_real_entities_master_numbers_and_cleanup(hass):
+        entry=MockConfigEntry(domain=DOMAIN,data=mapping(hass),options={'mode':'active'})
+        entry.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        runtime=entry.runtime_data
+        assert runtime.mode=='shadow'
+        registry=er.async_get(hass)
+        entities={e.unique_id:e.entity_id for e in er.async_entries_for_config_entry(registry,entry.entry_id)}
+        for key in ('master','minimum_price_advantage','mode','recalculate','permission','status'):
+>           assert entry.entry_id+'_'+key in entities
+E           AssertionError: assert (('01M4ZKHZ9YV143JHCNYTASWTF5' + '_') + 'master') in {'01M4ZKHZ9YV143JHCNYTASWTF5_armed': 'switch.armed', '01M4ZKHZ9YV143JHCNYTASWTF5_minimum_price_advantage': 'number.min...SWTF5_mode': 'select.controller_mode', '01M4ZKHZ9YV143JHCNYTASWTF5_recalculate': 'button.recalculate_shadow_plan', ...}
+E            +  where '01M4ZKHZ9YV143JHCNYTASWTF5' = <ConfigEntry entry_id=01M4ZKHZ9YV143JHCNYTASWTF5 version=1 domain=ecoflow_smart_charge title=Mock Title state=ConfigEntryState.LOADED unique_id=None>.entry_id
+
+tests/ha/test_native.py:52: AssertionError
+----------------------------- Captured stderr call -----------------------------
+INFO:homeassistant.loader:Loaded ecoflow_smart_charge from custom_components.ecoflow_smart_charge
+WARNING:homeassistant.loader:We found a custom integration ecoflow_smart_charge which has not been tested by Home Assistant. This component might cause stability problems, be sure to disable it if you experience issues with Home Assistant
+INFO:homeassistant.setup:Setting up ecoflow_smart_charge
+INFO:homeassistant.loader:Loaded sensor from homeassistant.components.sensor
+INFO:homeassistant.loader:Loaded binary_sensor from homeassistant.components.binary_sensor
+INFO:homeassistant.loader:Loaded number from homeassistant.components.number
+INFO:homeassistant.setup:Setting up number
+INFO:homeassistant.loader:Loaded select from homeassistant.components.select
+INFO:homeassistant.loader:Loaded switch from homeassistant.components.switch
+INFO:homeassistant.setup:Setting up switch
+INFO:homeassistant.loader:Loaded button from homeassistant.components.button
+INFO:homeassistant.setup:Setting up button
+INFO:homeassistant.setup:Setting up sensor
+INFO:homeassistant.setup:Setting up binary_sensor
+INFO:homeassistant.setup:Setting up select
+INFO:homeassistant.components.number:Setting up ecoflow_smart_charge.number
+INFO:homeassistant.helpers.entity_registry:Registered new number.ecoflow_smart_charge entity: number.minimum_price_advantage
+INFO:homeassistant.components.switch:Setting up ecoflow_smart_charge.switch
+INFO:homeassistant.helpers.entity_registry:Registered new switch.ecoflow_smart_charge entity: switch.armed
+INFO:homeassistant.components.button:Setting up ecoflow_smart_charge.button
+INFO:homeassistant.helpers.entity_registry:Registered new button.ecoflow_smart_charge entity: button.recalculate_shadow_plan
+INFO:homeassistant.components.sensor:Setting up ecoflow_smart_charge.sensor
+INFO:homeassistant.helpers.entity_registry:Registered new sensor.ecoflow_smart_charge entity: sensor.controller_status
+INFO:homeassistant.components.binary_sensor:Setting up ecoflow_smart_charge.binary_sensor
+INFO:homeassistant.helpers.entity_registry:Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.shadow_active
+INFO:homeassistant.helpers.entity_registry:Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.recovery_pending
+INFO:homeassistant.components.select:Setting up ecoflow_smart_charge.select
+INFO:homeassistant.helpers.entity_registry:Registered new select.ecoflow_smart_charge entity: select.controller_mode
+------------------------------ Captured log call -------------------------------
+INFO     homeassistant.loader:loader.py:801 Loaded ecoflow_smart_charge from custom_components.ecoflow_smart_charge
+WARNING  homeassistant.loader:loader.py:716 We found a custom integration ecoflow_smart_charge which has not been tested by Home Assistant. This component might cause stability problems, be sure to disable it if you experience issues with Home Assistant
+INFO     homeassistant.setup:setup.py:393 Setting up ecoflow_smart_charge
+INFO     homeassistant.loader:loader.py:801 Loaded sensor from homeassistant.components.sensor
+INFO     homeassistant.loader:loader.py:801 Loaded binary_sensor from homeassistant.components.binary_sensor
+INFO     homeassistant.loader:loader.py:801 Loaded number from homeassistant.components.number
+INFO     homeassistant.setup:setup.py:393 Setting up number
+INFO     homeassistant.loader:loader.py:801 Loaded select from homeassistant.components.select
+INFO     homeassistant.loader:loader.py:801 Loaded switch from homeassistant.components.switch
+INFO     homeassistant.setup:setup.py:393 Setting up switch
+INFO     homeassistant.loader:loader.py:801 Loaded button from homeassistant.components.button
+INFO     homeassistant.setup:setup.py:393 Setting up button
+INFO     homeassistant.setup:setup.py:393 Setting up sensor
+INFO     homeassistant.setup:setup.py:393 Setting up binary_sensor
+INFO     homeassistant.setup:setup.py:393 Setting up select
+INFO     homeassistant.components.number:entity_platform.py:484 Setting up ecoflow_smart_charge.number
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new number.ecoflow_smart_charge entity: number.minimum_price_advantage
+INFO     homeassistant.components.switch:entity_platform.py:484 Setting up ecoflow_smart_charge.switch
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new switch.ecoflow_smart_charge entity: switch.armed
+INFO     homeassistant.components.button:entity_platform.py:484 Setting up ecoflow_smart_charge.button
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new button.ecoflow_smart_charge entity: button.recalculate_shadow_plan
+INFO     homeassistant.components.sensor:entity_platform.py:484 Setting up ecoflow_smart_charge.sensor
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new sensor.ecoflow_smart_charge entity: sensor.controller_status
+INFO     homeassistant.components.binary_sensor:entity_platform.py:484 Setting up ecoflow_smart_charge.binary_sensor
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.shadow_active
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.recovery_pending
+INFO     homeassistant.components.select:entity_platform.py:484 Setting up ecoflow_smart_charge.select
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new select.ecoflow_smart_charge entity: select.controller_mode
+__________ test_migration_documents_make_safe_recovery_order_explicit __________
+
+    def test_migration_documents_make_safe_recovery_order_explicit():
+        required = [
+            "docs/migration/MIGRATION-DE.md",
+            "docs/migration/MIGRATION-EN.md",
+            "docs/migration/CARD-COMPATIBILITY.md",
+            "docs/release/DIAGNOSTICS.md",
+            "docs/release/VALIDATION.md",
+            "docs/release/PROVENANCE.md",
+            "docs/release/RELEASE-CHECKLIST.md",
+        ]
+>       assert all((ROOT / name).is_file() for name in required), "missing release runbooks"
+E       AssertionError: missing release runbooks
+E       assert False
+E        +  where False = all(<generator object test_migration_documents_make_safe_recovery_order_explicit.<locals>.<genexpr> at 0x727d0a269a40>)
+
+tests/packaging/test_documentation.py:18: AssertionError
+____________________ test_license_and_brand_assets_present _____________________
+
+    def test_license_and_brand_assets_present():
+        license_text = (ROOT / "LICENSE").read_text()
+        assert license_text.startswith("MIT License")
+        assert "Copyright (c) 2026 Mischa Fürst" in license_text
+        png = (ROOT / "brand/icon.png").read_bytes()
+        assert png[:8] == b"\x89PNG\r\n\x1a\n"
+        width, height = struct.unpack(">II", png[16:24])
+>       assert width == height and width >= 256
+E       assert (1 == 1 and 1 >= 256)
+
+tests/packaging/test_documentation.py:39: AssertionError
+__________ test_config_flow_rejects_incomplete_three_battery_mapping ___________
+
+self = <homeassistant.config_entries.ConfigEntriesFlowManager object at 0x727d0a2f83e0>
+flow_id = '01M4ZKHZG38G19MXVBSR707QS9'
+user_input = {'grid_energy_entity': 'sensor.grid', 'name': 'Test controller', 'operating_mode_entities': ['select.mode_1', 'select.mode_2', 'select.mode_3'], 'price_entity': 'sensor.price', ...}
+
+    async def _async_configure(
+        self, flow_id: str, user_input: dict | None = None
+    ) -> _FlowResultT:
+        """Continue a data entry flow."""
+        if (flow := self._progress.get(flow_id)) is None:
+            raise UnknownFlow
+
+        cur_step = flow.cur_step
+        assert cur_step is not None
+
+        if (
+            data_schema := cur_step.get("data_schema")
+        ) is not None and user_input is not None:
+            data_schema = cast(probatio.Schema, data_schema)
+            try:
+>               user_input = data_schema(user_input)
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/homeassistant/data_entry_flow.py:360:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/probatio/schema.py:342: in __call__
+    return self._compiled(data)
+           ^^^^^^^^^^^^^^^^^^^^
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/probatio/schema.py:466: in _bootstrap
+    return self._compiled(data)
+           ^^^^^^^^^^^^^^^^^^^^
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/probatio/schema.py:493: in validate
+    return interpreted(data)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <probatio._engine._MappingValidator object at 0x727d0a2e0050>
+data = {'grid_energy_entity': 'sensor.grid', 'name': 'Test controller', 'operating_mode_entities': ['select.mode_1', 'select.mode_2', 'select.mode_3'], 'price_entity': 'sensor.price', ...}
+
+    def __call__(self, data: Any) -> dict[Any, Any]:  # noqa: PLR0912
+        """Validate the mapping, gathering every error into one MultipleInvalid."""
+        # A plain dict is the common, hot case, so it short-circuits first.
+        # Anything else implementing the Mapping protocol (a MappingProxyType, a
+        # multidict, a custom mapping) is validated too, returning a plain dict;
+        # voluptuous accepts only dict, so this is a documented superset
+        # (carry-forward of voluptuous issue #299). A non-Mapping is rejected.
+        if not isinstance(data, dict) and not isinstance(data, Mapping):
+            raise DictInvalid(translation_key="expected_mapping")
+
+        # Preserve real dict subclasses, matching voluptuous. Other Mapping
+        # implementations validate too, but rebuild as a plain dict.
+        data_type = type(data)
+
+        if self._alias_lookup:
+            data = self._resolve_aliases(data)
+
+        out: dict[Any, Any] = (
+            {} if data_type is dict or not issubclass(data_type, dict) else data_type()
+        )
+        errors: list[Invalid] = []
+
+        # Track matches by candidate position. A bytearray is cheaper than a set
+        # here and lets the finalizer distinguish invalid keys from absent ones.
+        seen: bytearray | None = (
+            bytearray(len(self._candidates)) if self._track_seen else None
+        )
+
+        # Inline the literal-key fast path. More complex keys fall back to helpers.
+        fast_get = self._literal_fast.get
+        literal_get = self._literal.get
+        for key, value in data.items():
+            entry = fast_get(key)
+            if entry is not None:
+                index, value_type, check_value = entry
+                if seen is not None:
+                    seen[index] = 1
+                if value_type is not None:
+                    # Inlined ``{"k": <type>}``: isinstance, no validator call.
+                    if isinstance(value, value_type):
+                        out[key] = value
+                    else:
+                        errors.append(
+                            _type_error(value_type.__name__, [key], self._invalid_msg),
+                        )
+                    continue
+                try:
+                    out[key] = check_value(value)
+                except Invalid as exc:
+                    self._collect(key, exc, errors)
+                continue
+            match = literal_get(key)
+            if match is None:
+                self._match_validator(key, value, out, errors, seen)
+                continue
+            # Only Forbidden and Remove literal keys reach here; plain literal
+            # keys took the fast path above. ``_apply`` raises the forbidden
+            # error or validates the Remove value, and a Remove whose value fails
+            # has not consumed the key, so the type/callable candidates get a
+            # turn (a ``str: str`` may take it) and ``_match_validator`` applies
+            # the extra-key policy if none match.
+            index, candidate = match
+            if not self._apply(key, value, index, candidate, out, errors, seen):
+                self._match_validator(key, value, out, errors, seen)
+
+        if seen is not None:
+            self._finalize(out, errors, seen)
+        if self._has_groups and seen is not None:
+            self._check_groups(out, errors, seen)
+
+        if errors:
+            if self._secret_keys:
+                self._redact_secrets(errors)
+>           raise MultipleInvalid(errors)
+E           probatio.error.MultipleInvalid: required key not provided at 'forecast_today_entity'
+
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/probatio/_engine.py:286: MultipleInvalid
+
+The above exception was the direct cause of the following exception:
+
+hass = <HomeAssistant RUNNING>
+
+    @pytest.mark.usefixtures("enable_custom_integrations")
+    async def test_config_flow_rejects_incomplete_three_battery_mapping(hass) -> None:
+        result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+        assert result["type"] == "form"
+
+>       result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "name": "Test controller",
+                "grid_energy_entity": "sensor.grid",
+                "price_entity": "sensor.price",
+                "price_window_entity": "binary_sensor.window",
+                "pv_entity": "sensor.pv",
+                "soc_entities": ["sensor.soc_1", "sensor.soc_2"],
+                "reserve_entities": ["number.reserve_1", "number.reserve_2", "number.reserve_3"],
+                "self_powered_entities": ["switch.self_1", "switch.self_2", "switch.self_3"],
+                "operating_mode_entities": ["select.mode_1", "select.mode_2", "select.mode_3"],
+            },
+        )
+
+tests/test_config_flow.py:14:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/homeassistant/data_entry_flow.py:339: in async_configure
+    result = await self._async_configure(flow_id, user_input)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/homeassistant/config_entries.py:1691: in _async_configure
+    return await super()._async_configure(flow_id, user_input)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <homeassistant.config_entries.ConfigEntriesFlowManager object at 0x727d0a2f83e0>
+flow_id = '01M4ZKHZG38G19MXVBSR707QS9'
+user_input = {'grid_energy_entity': 'sensor.grid', 'name': 'Test controller', 'operating_mode_entities': ['select.mode_1', 'select.mode_2', 'select.mode_3'], 'price_entity': 'sensor.price', ...}
+
+    async def _async_configure(
+        self, flow_id: str, user_input: dict | None = None
+    ) -> _FlowResultT:
+        """Continue a data entry flow."""
+        if (flow := self._progress.get(flow_id)) is None:
+            raise UnknownFlow
+
+        cur_step = flow.cur_step
+        assert cur_step is not None
+
+        if (
+            data_schema := cur_step.get("data_schema")
+        ) is not None and user_input is not None:
+            data_schema = cast(probatio.Schema, data_schema)
+            try:
+                user_input = data_schema(user_input)
+            except probatio.Invalid as ex:
+                raised_errors = [ex]
+                if isinstance(ex, probatio.MultipleInvalid):
+                    raised_errors = ex.errors
+
+                schema_errors: dict[str, Any] = {}
+                for error in raised_errors:
+                    try:
+                        _map_error_to_schema_errors(schema_errors, error, data_schema)
+                    except ValueError:
+                        # If we get here, the path in the exception
+                        # does not exist in the schema.
+                        schema_errors.setdefault("base", []).append(str(error))
+>               raise InvalidData(
+                    "Schema validation failed",
+                    path=ex.path,
+                    error_message=ex.error_message,
+                    schema_errors=schema_errors,
+                ) from ex
+E               homeassistant.data_entry_flow.InvalidData: Schema validation failed at 'forecast_today_entity'
+
+../../tools/ha-integration-tests/.venv/lib/python3.14/site-packages/homeassistant/data_entry_flow.py:374: InvalidData
+----------------------------- Captured stderr call -----------------------------
+INFO:homeassistant.loader:Loaded ecoflow_smart_charge from custom_components.ecoflow_smart_charge
+WARNING:homeassistant.loader:We found a custom integration ecoflow_smart_charge which has not been tested by Home Assistant. This component might cause stability problems, be sure to disable it if you experience issues with Home Assistant
+------------------------------ Captured log call -------------------------------
+INFO     homeassistant.loader:loader.py:801 Loaded ecoflow_smart_charge from custom_components.ecoflow_smart_charge
+WARNING  homeassistant.loader:loader.py:716 We found a custom integration ecoflow_smart_charge which has not been tested by Home Assistant. This component might cause stability problems, be sure to disable it if you experience issues with Home Assistant
+____ RuntimeSafetyTests.test_active_persists_intent_before_any_writer_call _____
+
+self = <test_runtime.RuntimeSafetyTests testMethod=test_active_persists_intent_before_any_writer_call>
+
+    async def test_active_persists_intent_before_any_writer_call(self) -> None:
+        journal = FakeJournal()
+        events: list[str] = []
+>       runtime = Runtime("active", journal, lambda entity: 3.0, lambda entity, value: events.append(f"write:{entity}"))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_runtime.py:38:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <custom_components.ecoflow_smart_charge.runtime.Runtime object at 0x727d0a130650>
+mode = 'active', journal = <test_runtime.FakeJournal object at 0x727d0b763770>
+read_reserve = <function RuntimeSafetyTests.test_active_persists_intent_before_any_writer_call.<locals>.<lambda> at 0x727d0a129220>
+write_reserve = <function RuntimeSafetyTests.test_active_persists_intent_before_any_writer_call.<locals>.<lambda> at 0x727d0a12a980>
+
+    def __init__(self, mode, journal, read_reserve, write_reserve, *, evaluate=None,
+                 writers=(), save_comparison=None):
+        # Persisted options cannot reactivate a controller on restart.
+        self.mode = 'shadow'
+        self.journal = journal
+        self._read, self._write, self._evaluate = read_reserve, write_reserve, evaluate
+        self.writers = tuple(writers)
+        self._save_comparison = save_comparison
+        self._lock = asyncio.Lock()
+>       self.status = 'recovery_blocked' if journal.blocked else (
+                                            ^^^^^^^^^^^^^^^
+            'recovery_pending' if journal.record else 'shadow')
+E       AttributeError: 'FakeJournal' object has no attribute 'blocked'
+
+custom_components/ecoflow_smart_charge/runtime.py:26: AttributeError
+____ RuntimeSafetyTests.test_restore_clears_only_after_individual_readback _____
+
+self = <test_runtime.RuntimeSafetyTests testMethod=test_restore_clears_only_after_individual_readback>
+
+    async def test_restore_clears_only_after_individual_readback(self) -> None:
+        journal = FakeJournal()
+        journal.record = type("Record", (), {"reserves_before": {"number.one": 3.0, "number.two": 4.0}})()
+        values = {"number.one": 3.0, "number.two": 9.0}
+        calls: list[tuple[str, float]] = []
+>       runtime = Runtime("active", journal, lambda entity: values[entity], lambda e, v: calls.append((e, v)))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_runtime.py:48:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <custom_components.ecoflow_smart_charge.runtime.Runtime object at 0x727d0a133250>
+mode = 'active', journal = <test_runtime.FakeJournal object at 0x727d0a389950>
+read_reserve = <function RuntimeSafetyTests.test_restore_clears_only_after_individual_readback.<locals>.<lambda> at 0x727d0a353110>
+write_reserve = <function RuntimeSafetyTests.test_restore_clears_only_after_individual_readback.<locals>.<lambda> at 0x727d0a352ae0>
+
+    def __init__(self, mode, journal, read_reserve, write_reserve, *, evaluate=None,
+                 writers=(), save_comparison=None):
+        # Persisted options cannot reactivate a controller on restart.
+        self.mode = 'shadow'
+        self.journal = journal
+        self._read, self._write, self._evaluate = read_reserve, write_reserve, evaluate
+        self.writers = tuple(writers)
+        self._save_comparison = save_comparison
+        self._lock = asyncio.Lock()
+>       self.status = 'recovery_blocked' if journal.blocked else (
+                                            ^^^^^^^^^^^^^^^
+            'recovery_pending' if journal.record else 'shadow')
+E       AttributeError: 'FakeJournal' object has no attribute 'blocked'
+
+custom_components/ecoflow_smart_charge/runtime.py:26: AttributeError
+_____________ RuntimeSafetyTests.test_shadow_never_invokes_writer ______________
+
+self = <test_runtime.RuntimeSafetyTests testMethod=test_shadow_never_invokes_writer>
+
+    async def test_shadow_never_invokes_writer(self) -> None:
+        journal = FakeJournal()
+        calls: list[tuple[str, float]] = []
+>       runtime = Runtime("shadow", journal, lambda entity: 3.0, lambda entity, value: calls.append((entity, value)))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_runtime.py:30:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <custom_components.ecoflow_smart_charge.runtime.Runtime object at 0x727d0a133750>
+mode = 'shadow', journal = <test_runtime.FakeJournal object at 0x727d0a38bed0>
+read_reserve = <function RuntimeSafetyTests.test_shadow_never_invokes_writer.<locals>.<lambda> at 0x727d0a1abd70>
+write_reserve = <function RuntimeSafetyTests.test_shadow_never_invokes_writer.<locals>.<lambda> at 0x727d0a1ab530>
+
+    def __init__(self, mode, journal, read_reserve, write_reserve, *, evaluate=None,
+                 writers=(), save_comparison=None):
+        # Persisted options cannot reactivate a controller on restart.
+        self.mode = 'shadow'
+        self.journal = journal
+        self._read, self._write, self._evaluate = read_reserve, write_reserve, evaluate
+        self.writers = tuple(writers)
+        self._save_comparison = save_comparison
+        self._lock = asyncio.Lock()
+>       self.status = 'recovery_blocked' if journal.blocked else (
+                                            ^^^^^^^^^^^^^^^
+            'recovery_pending' if journal.record else 'shadow')
+E       AttributeError: 'FakeJournal' object has no attribute 'blocked'
+
+custom_components/ecoflow_smart_charge/runtime.py:26: AttributeError
+_______ test_planner_requires_current_price_to_be_in_published_interval ________
+
+    def test_planner_requires_current_price_to_be_in_published_interval() -> None:
+        candidate = _input(prices=(PricePoint(_input().now - timedelta(hours=1), 10.0), PricePoint(_input().now, 40.0)))
+        result = decide(candidate)
+        assert not result.allowed
+>       assert result.reason == "price_gap"
+E       AssertionError: assert 'required_state_invalid' == 'price_gap'
+E
+E         - price_gap
+E         + required_state_invalid
+
+tests/test_safety_regressions.py:63: AssertionError
+_ test_planner_accepts_current_published_interval_when_now_is_not_on_boundary __
+
+    def test_planner_accepts_current_published_interval_when_now_is_not_on_boundary() -> None:
+        now = _input().now + timedelta(minutes=17)
+        prices = tuple(PricePoint(_input().now + timedelta(hours=i), 10.0 if i == 0 else 40.0) for i in range(8))
+        result = decide(_input(now=now, prices=prices, price_series_updated=now, sunset=now + timedelta(hours=4)))
+>       assert result.allowed
+E       AssertionError: assert False
+E        +  where False = PlanResult(allowed=False, reason='required_state_invalid', missing_energy_kwh=0.0, solar_surplus_kwh=0.0, avoided_pric...percent=None, command_plan=(), solar_day=None, coverage_kwh=0.0, target_ac_kwh=0.0, coverage_fraction=0.0, cost_ct=0.0).allowed
+
+tests/test_safety_regressions.py:70: AssertionError
+______ test_second_start_does_not_overwrite_persisted_individual_reserves ______
+
+    @pytest.mark.asyncio
+    async def test_second_start_does_not_overwrite_persisted_individual_reserves() -> None:
+        store = PersistentSessionStore(MemoryStore())
+        calls: list[tuple[str, float]] = []
+        runtime = Runtime("active", store, lambda _entity: 3.0, lambda entity, value: calls.append((entity, value)))
+>       assert await runtime.async_start({"number.one": 3.0, "number.two": 4.0})
+E       assert False
+
+tests/test_safety_regressions.py:78: AssertionError
+______ test_restore_marks_readback_pending_until_a_second_confirmed_read _______
+
+    @pytest.mark.asyncio
+    async def test_restore_marks_readback_pending_until_a_second_confirmed_read() -> None:
+        store = PersistentSessionStore(MemoryStore())
+        await store.async_capture_before_command("session", {"number.one": 3.0}, {"number.one": 100.0})
+        value = {"number.one": 7.0}
+        calls: list[tuple[str, float]] = []
+        runtime = Runtime("active", store, lambda entity: value[entity], lambda entity, target: calls.append((entity, target)))
+        assert not await runtime.async_restore()
+        assert store.record is not None
+>       assert store.record.phase == "restore_pending"
+E       AssertionError: assert 'intent_persisted' == 'restore_pending'
+E
+E         - restore_pending
+E         + intent_persisted
+
+tests/test_safety_regressions.py:94: AssertionError
+=========================== short test summary info ============================
+FAILED tests/foundation/test_core_isolation.py::IsolationTests::test_existing_core_import_has_no_homeassistant_dependency
+FAILED tests/ha/test_native.py::test_valid_flow_and_options_do_not_allow_active_bypass
+FAILED tests/ha/test_native.py::test_real_entities_master_numbers_and_cleanup
+FAILED tests/packaging/test_documentation.py::test_migration_documents_make_safe_recovery_order_explicit
+FAILED tests/packaging/test_documentation.py::test_license_and_brand_assets_present
+FAILED tests/test_config_flow.py::test_config_flow_rejects_incomplete_three_battery_mapping
+FAILED tests/test_runtime.py::RuntimeSafetyTests::test_active_persists_intent_before_any_writer_call
+FAILED tests/test_runtime.py::RuntimeSafetyTests::test_restore_clears_only_after_individual_readback
+FAILED tests/test_runtime.py::RuntimeSafetyTests::test_shadow_never_invokes_writer
+FAILED tests/test_safety_regressions.py::test_planner_requires_current_price_to_be_in_published_interval
+FAILED tests/test_safety_regressions.py::test_planner_accepts_current_published_interval_when_now_is_not_on_boundary
+FAILED tests/test_safety_regressions.py::test_second_start_does_not_overwrite_persisted_individual_reserves
+FAILED tests/test_safety_regressions.py::test_restore_marks_readback_pending_until_a_second_confirmed_read
+13 failed, 158 passed in 2.05s

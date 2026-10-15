@@ -1,0 +1,17 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_zero_median_is_a_real_learned_correction_not_neutral ___________
+
+    def test_zero_median_is_a_real_learned_correction_not_neutral():
+        from custom_components.ecoflow_smart_charge.planner.learning import PVLearningState, learn_day
+        d = date(2026, 1, 1)
+        s = PVLearningState((0., 0.), 1., d, 2., None)
+>       assert learn_day(s, day=d, actual_kwh=0., hourly_rows=23).correction == 0.
+E       assert 1.0 == 0.0
+E        +  where 1.0 = PVLearningState(ratios=(0.0, 0.0, 0.0), correction=1.0, probe_day=datetime.date(2026, 1, 1), probe_kwh=2.0, learned_day=datetime.date(2026, 1, 1)).correction
+E        +    where PVLearningState(ratios=(0.0, 0.0, 0.0), correction=1.0, probe_day=datetime.date(2026, 1, 1), probe_kwh=2.0, learned_day=datetime.date(2026, 1, 1)) = <function learn_day at 0x730ad0189380>(PVLearningState(ratios=(0.0, 0.0), correction=1.0, probe_day=datetime.date(2026, 1, 1), probe_kwh=2.0, learned_day=None), day=datetime.date(2026, 1, 1), actual_kwh=0.0, hourly_rows=23)
+
+tests/unit/test_learning.py:42: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_learning.py::test_zero_median_is_a_real_learned_correction_not_neutral
+1 failed in 0.11s

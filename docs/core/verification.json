@@ -1,0 +1,23 @@
+{
+  "source_ledger_hash_checks": {
+    "C": true,
+    "L": true,
+    "curated": true,
+    "H": true,
+    "G-readme": true,
+    "G-advantage": true,
+    "G-permission": true,
+    "K": true
+  },
+  "source_files_unchanged": true,
+  "owned_files_scanned": 41,
+  "private_source_identifiers_checked": 103,
+  "matching_owned_files": [],
+  "core_test_totals": {
+    "tests": "148",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0"
+  },
+  "scope": "Core-owned candidate tree only, not a full repository/history release scan."
+}

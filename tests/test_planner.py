@@ -1,4 +1,5 @@
 """Behavioral tests for the HA-independent safety planning core."""
+
 from __future__ import annotations
 
 import unittest
@@ -35,8 +36,7 @@ def complete_rows(days: int = 3) -> list[dict[str, object]]:
 def valid_input(**overrides: object) -> PlannerInput:
     now = datetime(2026, 1, 4, 12, tzinfo=UTC)
     prices = tuple(
-        PricePoint(now + timedelta(hours=h), 10.0 if h == 0 else 30.0)
-        for h in range(12)
+        PricePoint(now + timedelta(minutes=15 * h), 10.0 if h == 0 else 30.0) for h in range(96)
     )
     data: dict[str, object] = {
         "now": now,
@@ -63,6 +63,8 @@ def valid_input(**overrides: object) -> PlannerInput:
         "full_marker_for_solar_day": False,
         "sources_fresh": True,
         "protection_mode": True,
+        "current_price_ct": 10.0,
+        "below_horizon": False,
     }
     data.update(overrides)
     return PlannerInput(**data)
@@ -89,17 +91,22 @@ class PolicyTests(unittest.TestCase):
 
     def test_internal_price_gap_fails_closed(self) -> None:
         candidate = valid_input()
-        prices = candidate.prices[:2] + (
-            PricePoint(candidate.now + timedelta(hours=3), 30.0),
-        )
+        prices = candidate.prices[:2] + (PricePoint(candidate.now + timedelta(hours=3), 30.0),)
         result = decide(valid_input(prices=prices))
         self.assertFalse(result.allowed)
         self.assertEqual(result.reason, "price_gap")
 
     def test_unrounded_price_advantage_blocks_below_threshold(self) -> None:
         now = datetime(2026, 1, 4, 12, tzinfo=UTC)
-        prices = tuple(PricePoint(now + timedelta(hours=h), 20.0000000003 if h == 0 else 25.0) for h in range(12))
-        result = decide(valid_input(prices=prices, minimum_price_advantage_percent=20.0))
+        prices = tuple(
+            PricePoint(now + timedelta(minutes=15 * h), 20.0000000003 if h == 0 else 25.0)
+            for h in range(96)
+        )
+        result = decide(
+            valid_input(
+                prices=prices, current_price_ct=20.0000000003, minimum_price_advantage_percent=20.0
+            )
+        )
         self.assertFalse(result.allowed)
         self.assertEqual(result.reason, "price_advantage_too_low")
 
@@ -121,7 +128,9 @@ class LearningTests(unittest.TestCase):
         self.assertEqual(learned, (1.0, 2.0))
 
     def test_pv_learning_keeps_at_most_fourteen_ratios(self) -> None:
-        learned = learn_pv_correction(list(range(1, 15)), actual_kwh=2, forecast_kwh=1, hourly_rows=24)
+        learned = learn_pv_correction(
+            list(range(1, 15)), actual_kwh=2, forecast_kwh=1, hourly_rows=24
+        )
         self.assertEqual(len(learned), 14)
         self.assertEqual(learned[-1], 2.0)
 

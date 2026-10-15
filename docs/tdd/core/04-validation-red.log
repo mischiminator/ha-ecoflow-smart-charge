@@ -1,0 +1,427 @@
+F..FFFFF.FFFFFFFF..FFF.FFFF.F                                            [100%]
+=================================== FAILURES ===================================
+________________ test_price_source_age_exclusive[-0.001-False] _________________
+
+age = -0.001, allowed = False
+
+    @pytest.mark.parametrize('age,allowed', [(-.001,False), (0,True), (899.999,True), (900,False)])
+    def test_price_source_age_exclusive(age, allowed):
+        c = candidate()
+>       assert decide(replace(c, price_series_updated=c.now-timedelta(seconds=age))).allowed is allowed
+E       AssertionError: assert True is False
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = replace(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False), price_series_updated=(datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc) - datetime.timedelta(days=-1, seconds=86399, microseconds=999000)))
+E        +        where datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc) = PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False).now
+E        +        and   datetime.timedelta(days=-1, seconds=86399, microseconds=999000) = timedelta(seconds=-0.001)
+
+tests/unit/test_validation.py:12: AssertionError
+__________________ test_price_source_age_exclusive[900-False] __________________
+
+age = 900, allowed = False
+
+    @pytest.mark.parametrize('age,allowed', [(-.001,False), (0,True), (899.999,True), (900,False)])
+    def test_price_source_age_exclusive(age, allowed):
+        c = candidate()
+>       assert decide(replace(c, price_series_updated=c.now-timedelta(seconds=age))).allowed is allowed
+E       AssertionError: assert True is False
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = replace(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False), price_series_updated=(datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc) - datetime.timedelta(seconds=900)))
+E        +        where datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc) = PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False).now
+E        +        and   datetime.timedelta(seconds=900) = timedelta(seconds=900)
+
+tests/unit/test_validation.py:12: AssertionError
+_______ test_invalid_required_inputs_fail_closed[current_price_ct-None] ________
+
+field = 'current_price_ct', bad = None
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=None, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=None, below_horizon=False) = candidate(**{'current_price_ct': None})
+
+tests/unit/test_validation.py:23: AssertionError
+_________ test_invalid_required_inputs_fail_closed[below_horizon-None] _________
+
+field = 'below_horizon', bad = None
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date..., full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=None))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date..., full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=None) = candidate(**{'below_horizon': None})
+
+tests/unit/test_validation.py:23: AssertionError
+________ test_invalid_required_inputs_fail_closed[current_price_ct-nan] ________
+
+field = 'current_price_ct', bad = nan
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date..., full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=nan, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date..., full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=nan, below_horizon=False) = candidate(**{'current_price_ct': nan})
+
+tests/unit/test_validation.py:23: AssertionError
+__________ test_invalid_required_inputs_fail_closed[efficiency-True] ___________
+
+field = 'efficiency', bad = True
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ercent=75.0, command_plan=(), solar_day=None, coverage_kwh=3.0, target_ac_kwh=3.0, coverage_fraction=1.0, cost_ct=12.0).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ercent=75.0, command_plan=(), solar_day=None, coverage_kwh=3.0, target_ac_kwh=3.0, coverage_fraction=1.0, cost_ct=12.0) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = candidate(**{'efficiency': True})
+
+tests/unit/test_validation.py:23: AssertionError
+________ test_invalid_required_inputs_fail_closed[forecast_tomorrow--1] ________
+
+field = 'forecast_tomorrow', bad = -1
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = candidate(**{'forecast_tomorrow': -1})
+
+tests/unit/test_validation.py:23: AssertionError
+__________ test_invalid_required_inputs_fail_closed[pv_correction--1] __________
+
+field = 'pv_correction', bad = -1
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = candidate(**{'pv_correction': -1})
+
+tests/unit/test_validation.py:23: AssertionError
+_________ test_invalid_required_inputs_fail_closed[wear_cost_ct-True] __________
+
+field = 'wear_cost_ct', bad = True
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=13.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=13.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = candidate(**{'wear_cost_ct': True})
+
+tests/unit/test_validation.py:23: AssertionError
+_____ test_invalid_required_inputs_fail_closed[minimum_net_saving_ct-nan] ______
+
+field = 'minimum_net_saving_ct', bad = nan
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = candidate(**{'minimum_net_saving_ct': nan})
+
+tests/unit/test_validation.py:23: AssertionError
+_______ test_invalid_required_inputs_fail_closed[charge_ceiling_ct-nan] ________
+
+field = 'charge_ceiling_ct', bad = nan
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = candidate(**{'charge_ceiling_ct': nan})
+
+tests/unit/test_validation.py:23: AssertionError
+__________ test_invalid_required_inputs_fail_closed[batteries-bad10] ___________
+
+field = 'batteries'
+bad = (Battery(soc=50, reserve=2), Battery(soc=50, reserve=2), Battery(soc=50, reserve=2))
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = candidate(**{'batteries': (Battery(soc=50, reserve=2), Battery(soc=50, reserve=2), Battery(soc=50, reserve=2))})
+
+tests/unit/test_validation.py:23: AssertionError
+__________ test_invalid_required_inputs_fail_closed[batteries-bad11] ___________
+
+field = 'batteries'
+bad = (Battery(soc=True, reserve=3), Battery(soc=True, reserve=3), Battery(soc=True, reserve=3))
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=5.9399999999999995, solar_surplus_kwh=0.0, ...nd_plan=(), solar_day=None, coverage_kwh=5.346, target_ac_kwh=5.346, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=5.9399999999999995, solar_surplus_kwh=0.0, ...nd_plan=(), solar_day=None, coverage_kwh=5.346, target_ac_kwh=5.346, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = candidate(**{'batteries': (Battery(soc=True, reserve=3), Battery(soc=True, reserve=3), Battery(soc=True, reserve=3))})
+
+tests/unit/test_validation.py:23: AssertionError
+__________ test_invalid_required_inputs_fail_closed[batteries-bad12] ___________
+
+field = 'batteries', bad = (Battery(soc=50, reserve=3),)
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=1.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=0.9, target_ac_kwh=0.9, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=1.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=0.9, target_ac_kwh=0.9, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = candidate(**{'batteries': (Battery(soc=50, reserve=3),)})
+
+tests/unit/test_validation.py:23: AssertionError
+________ test_invalid_required_inputs_fail_closed[best_price_window-on] ________
+
+field = 'best_price_window', bad = 'on'
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = candidate(**{'best_price_window': 'on'})
+
+tests/unit/test_validation.py:23: AssertionError
+_________ test_invalid_required_inputs_fail_closed[active_session-off] _________
+
+field = 'active_session', bad = 'off'
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = candidate(**{'active_session': 'off'})
+
+tests/unit/test_validation.py:23: AssertionError
+___ test_invalid_required_inputs_fail_closed[full_marker_for_solar_day-None] ___
+
+field = 'full_marker_for_solar_day', bad = None
+
+    @pytest.mark.parametrize('field,bad', [('current_price_ct',None), ('below_horizon',None),
+        ('current_price_ct',float('nan')), ('efficiency', True), ('forecast_today',float('inf')),
+        ('forecast_tomorrow',-1), ('pv_correction',-1), ('wear_cost_ct', True),
+        ('minimum_net_saving_ct',float('nan')), ('charge_ceiling_ct',float('nan')),
+        ('batteries',(Battery(50,2),)*3), ('batteries',(Battery(True,3),)*3),
+        ('batteries',(Battery(50,3),)), ('sources_fresh',None), ('protection_mode',None),
+        ('best_price_window','on'), ('active_session','off'), ('full_marker_for_solar_day',None)])
+    def test_invalid_required_inputs_fail_closed(field,bad):
+>       assert not decide(candidate(**{field:bad})).allowed
+E       AssertionError: assert not True
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date..., full_marker_for_solar_day=None, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E        +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date..., full_marker_for_solar_day=None, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = candidate(**{'full_marker_for_solar_day': None})
+
+tests/unit/test_validation.py:23: AssertionError
+_______________ test_current_quote_strict_tolerance[0.051-False] _______________
+
+difference = 0.051, allowed = False
+
+    @pytest.mark.parametrize('difference,allowed', [(0.050999, True),(.051,False),(-.051,False)])
+    def test_current_quote_strict_tolerance(difference,allowed):
+        c = candidate(current_price_ct=difference)
+        c = replace(c, prices=(PricePoint(c.now,0),)+c.prices[1:])
+>       assert decide(c).allowed is allowed
+E       AssertionError: assert True is False
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ercent=100.0, command_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=2.0).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ercent=100.0, command_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=2.0) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date...full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=0.051, below_horizon=False))
+
+tests/unit/test_validation.py:30: AssertionError
+______________ test_current_quote_strict_tolerance[-0.051-False] _______________
+
+difference = -0.051, allowed = False
+
+    @pytest.mark.parametrize('difference,allowed', [(0.050999, True),(.051,False),(-.051,False)])
+    def test_current_quote_strict_tolerance(difference,allowed):
+        c = candidate(current_price_ct=difference)
+        c = replace(c, prices=(PricePoint(c.now,0),)+c.prices[1:])
+>       assert decide(c).allowed is allowed
+E       AssertionError: assert True is False
+E        +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ercent=100.0, command_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=2.0).allowed
+E        +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ercent=100.0, command_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=2.0) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date...ull_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=-0.051, below_horizon=False))
+
+tests/unit/test_validation.py:30: AssertionError
+____________ test_duplicate_unsorted_and_hourly_series_are_rejected ____________
+
+    def test_duplicate_unsorted_and_hourly_series_are_rejected():
+        c=candidate()
+        for series in (c.prices+(c.prices[-1],), c.prices[::-1], c.prices[::4]):
+>           assert not decide(replace(c,prices=series)).allowed
+E           AssertionError: assert not True
+E            +  where True = PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679).allowed
+E            +    where PlanResult(allowed=True, reason='eligible_shadow_plan', missing_energy_kwh=3.0, solar_surplus_kwh=0.0, avoided_price_c...ommand_plan=(), solar_day=None, coverage_kwh=2.7, target_ac_kwh=2.7, coverage_fraction=1.0, cost_ct=14.345679012345679) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+E            +      where PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False) = replace(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False), prices=(PricePoint(starts_at=datetime.datetime(2026, 1, 5, 12, 0, tzinfo=datetime.timezone.utc), price_ct=40), PricePoint(sta...ce_ct=40), PricePoint(starts_at=datetime.datetime(2026, 1, 5, 10, 45, tzinfo=datetime.timezone.utc), price_ct=40), ...))
+
+tests/unit/test_validation.py:36: AssertionError
+________ test_untraversed_gap_does_not_invalidate_fully_covered_target _________
+
+    def test_untraversed_gap_does_not_invalidate_fully_covered_target():
+        c=candidate()
+        # tiny target is covered at 12:15; the gap after 12:30 is irrelevant.
+        c=replace(c, batteries=(Battery(99,99),)*3, prices=c.prices[:3]+c.prices[4:])
+>       assert decide(c).allowed
+E       AssertionError: assert False
+E        +  where False = PlanResult(allowed=False, reason='price_gap', missing_energy_kwh=0.06, solar_surplus_kwh=0.0, avoided_price_ct=0.0, ne...percent=None, command_plan=(), solar_day=None, coverage_kwh=0.0, target_ac_kwh=0.0, coverage_fraction=0.0, cost_ct=0.0).allowed
+E        +    where PlanResult(allowed=False, reason='price_gap', missing_energy_kwh=0.06, solar_surplus_kwh=0.0, avoided_price_ct=0.0, ne...percent=None, command_plan=(), solar_day=None, coverage_kwh=0.0, target_ac_kwh=0.0, coverage_fraction=0.0, cost_ct=0.0) = decide(PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.timezone.utc), prices=(PricePoint(starts_at=date... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False))
+
+tests/unit/test_validation.py:43: AssertionError
+_______________ test_naive_and_past_sunset_do_not_raise_or_allow _______________
+
+    def test_naive_and_past_sunset_do_not_raise_or_allow():
+        c=candidate()
+        for changed in ({'now':c.now.replace(tzinfo=None)}, {'sunset':c.now},
+                        {'sunset':c.sunset.replace(tzinfo=None)}, {'price_series_updated':c.now.replace(tzinfo=None)}):
+>           assert not decide(replace(c,**changed)).allowed
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_validation.py:56:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+custom_components/ecoflow_smart_charge/planner/core.py:169: in decide
+    invalid = _reason(value)
+              ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+value = PlannerInput(now=datetime.datetime(2026, 1, 4, 12, 0), prices=(PricePoint(starts_at=datetime.datetime(2026, 1, 4, 12, ... full_marker_for_solar_day=False, sources_fresh=True, protection_mode=True, current_price_ct=10.0, below_horizon=False)
+
+    def _reason(value: PlannerInput) -> str | None:
+        if not value.sources_fresh:
+            return "sources_stale"
+        if not value.profile.valid:
+            return "profile_invalid"
+        if not value.protection_mode:
+            return "protection_mode_required"
+>       if value.now - value.price_series_updated > timedelta(minutes=15):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: can't subtract offset-naive and offset-aware datetimes
+
+custom_components/ecoflow_smart_charge/planner/core.py:136: TypeError
+=========================== short test summary info ============================
+FAILED tests/unit/test_validation.py::test_price_source_age_exclusive[-0.001-False]
+FAILED tests/unit/test_validation.py::test_price_source_age_exclusive[900-False]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[current_price_ct-None]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[below_horizon-None]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[current_price_ct-nan]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[efficiency-True]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[forecast_tomorrow--1]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[pv_correction--1]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[wear_cost_ct-True]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[minimum_net_saving_ct-nan]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[charge_ceiling_ct-nan]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[batteries-bad10]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[batteries-bad11]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[batteries-bad12]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[best_price_window-on]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[active_session-off]
+FAILED tests/unit/test_validation.py::test_invalid_required_inputs_fail_closed[full_marker_for_solar_day-None]
+FAILED tests/unit/test_validation.py::test_current_quote_strict_tolerance[0.051-False]
+FAILED tests/unit/test_validation.py::test_current_quote_strict_tolerance[-0.051-False]
+FAILED tests/unit/test_validation.py::test_duplicate_unsorted_and_hourly_series_are_rejected
+FAILED tests/unit/test_validation.py::test_untraversed_gap_does_not_invalidate_fully_covered_target
+FAILED tests/unit/test_validation.py::test_naive_and_past_sunset_do_not_raise_or_allow
+22 failed, 7 passed in 0.22s
