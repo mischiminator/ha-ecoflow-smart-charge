@@ -26,10 +26,17 @@ class EcoFlowSmartChargeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
+        errors = {}
         if user_input is not None:
-            await self.async_set_unique_id(f"{DOMAIN}:{user_input[CONF_GRID_ENERGY]}")
-            self._abort_if_unique_id_configured()
-            return self.async_create_entry(title=user_input[CONF_NAME], data=user_input)
+            triples = (CONF_SOC, CONF_RESERVES, CONF_SELF_POWERED, CONF_OPERATING_MODE)
+            if any(len(user_input.get(key, [])) != 3 for key in triples):
+                errors["base"] = "three_batteries_required"
+            elif len(set(user_input[CONF_RESERVES])) != 3:
+                errors["base"] = "duplicate_reserves"
+            else:
+                await self.async_set_unique_id(f"{DOMAIN}:{user_input[CONF_GRID_ENERGY]}")
+                self._abort_if_unique_id_configured()
+                return self.async_create_entry(title=user_input[CONF_NAME], data=user_input)
         schema = vol.Schema({
             vol.Required(CONF_NAME, default="EcoFlow Smart Charge"): str,
             vol.Required(CONF_GRID_ENERGY): _entity_selector(["sensor"]),
@@ -41,7 +48,7 @@ class EcoFlowSmartChargeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_SELF_POWERED): _entity_selector(["switch"], True),
             vol.Required(CONF_OPERATING_MODE): _entity_selector(["select"], True),
         })
-        return self.async_show_form(step_id="user", data_schema=schema)
+        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     @staticmethod
     @config_entries.callback

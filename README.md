@@ -2,7 +2,7 @@
 
 Native Home Assistant custom integration for a **shadow-first** EcoFlow price-charge controller. It orchestrates existing Home Assistant entities from the already-installed EcoFlow integration; it does not create an EcoFlow cloud connection and does not collect credentials.
 
-> Safety status: this repository is an implementation candidate, not an installed controller. It was developed without a Home Assistant Core test environment in this workspace. Do not use `active` mode until an HA-Core harness and a supervised, explicitly approved cutover have passed.
+> Safety status: this repository is an implementation candidate, not an installed controller. HA Core 2026.10.1 lifecycle/config-flow tests are executed locally, but the Recorder-to-planner adapter, real tariff parsing, migration importer, and active-controller cutover remain incomplete. Do not use `active` mode until those pieces and a supervised, explicitly approved cutover have passed.
 
 ## Safety model
 
@@ -40,11 +40,11 @@ After a verified public GitHub release, add `mischiminator/ha-ecoflow-smart-char
 ## Development checks
 
 ```sh
-python3 -m unittest discover -s tests -v
-python3 -m json.tool custom_components/ecoflow_smart_charge/manifest.json
+.venv/bin/python -m pytest tests -q -o asyncio_mode=auto
+.venv/bin/python -m json.tool custom_components/ecoflow_smart_charge/manifest.json
 ```
 
-CI additionally declares Ruff, HACS validation, and Hassfest. A real HA Core-compatible test environment is required for ConfigFlow, setup/unload, platform, service, diagnostics, and Recorder adapter tests.
+CI additionally declares Ruff, HACS validation, and Hassfest. The local HA-compatible harness covers ConfigFlow and setup/unload; the required Recorder adapter and its populated-history/DST/unit tests are still outstanding.
 
 ## Privacy
 

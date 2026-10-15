@@ -1,8 +1,8 @@
 """Behavioral tests for the HA-independent safety planning core."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 import unittest
+from datetime import UTC, datetime, timedelta
 
 from custom_components.ecoflow_smart_charge.planner.core import (
     Battery,
@@ -12,8 +12,6 @@ from custom_components.ecoflow_smart_charge.planner.core import (
     decide,
     learn_pv_correction,
 )
-
-UTC = timezone.utc
 
 
 def complete_rows(days: int = 3) -> list[dict[str, object]]:

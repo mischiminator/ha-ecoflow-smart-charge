@@ -1,10 +1,11 @@
 """HA-free planning primitives; no Home Assistant or I/O imports are permitted."""
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from itertools import pairwise
 from statistics import median
-from typing import Iterable
 
 EPSILON = 1e-9
 
@@ -134,13 +135,20 @@ def _reason(value: PlannerInput) -> str | None:
 
 def _continuous_prices(prices: tuple[PricePoint, ...], now: datetime) -> bool:
     ordered = sorted(prices, key=lambda point: point.starts_at)
-    if ordered[0].starts_at != now:
+    current_index = _current_price_index(ordered, now)
+    if current_index is None or current_index >= len(ordered) - 1:
         return False
     # Tibber series may be hourly or quarter-hourly. Gaps beyond one nominal interval fail closed.
     spacing = ordered[1].starts_at - ordered[0].starts_at
     if spacing <= timedelta(0) or spacing > timedelta(hours=1):
         return False
-    return all(b.starts_at - a.starts_at == spacing for a, b in zip(ordered, ordered[1:]))
+    return all(b.starts_at - a.starts_at == spacing for a, b in pairwise(ordered)) and now < ordered[current_index + 1].starts_at
+
+
+def _current_price_index(ordered: list[PricePoint], now: datetime) -> int | None:
+    """Locate the published interval containing now, not only an exact boundary."""
+    indexes = [index for index, point in enumerate(ordered) if point.starts_at <= now]
+    return indexes[-1] if indexes else None
 
 
 def decide(value: PlannerInput) -> PlanResult:
@@ -149,9 +157,13 @@ def decide(value: PlannerInput) -> PlanResult:
     missing = sum(value.capacity_kwh * max(100 - battery.soc, 0) / 100 for battery in value.batteries)
     if invalid:
         return PlanResult(False, invalid, missing, 0.0, 0.0, 0.0, None)
-    current = value.prices[0].price_ct
+    ordered = sorted(value.prices, key=lambda point: point.starts_at)
+    current_index = _current_price_index(ordered, value.now)
+    if current_index is None:  # Defensive: _reason should already reject this.
+        return PlanResult(False, "price_gap", missing, 0.0, 0.0, 0.0, None)
+    current = ordered[current_index].price_ct
     solar = _solar_surplus(value)
-    future = sorted(value.prices[1:], key=lambda p: p.starts_at)
+    future = ordered[current_index + 1 :]
     required = missing
     covered, avoided = _weighted_avoided_price(value.profile, future, required)
     if missing <= 0:

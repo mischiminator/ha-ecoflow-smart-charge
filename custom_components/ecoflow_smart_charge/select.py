@@ -1,13 +1,14 @@
 """Options-backed controller mode selector."""
 from homeassistant.components.select import SelectEntity
-from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
 
 class ModeSelect(SelectEntity):
     _attr_has_entity_name = True
     _attr_name = "Controller mode"
-    _attr_options = ["shadow", "armed", "active"]
+    _attr_options = ("shadow", "armed", "active")
     def __init__(self, entry): self._entry = entry; self._attr_unique_id = f"{entry.entry_id}_mode"
     @property
     def current_option(self): return self._entry.runtime_data.mode

@@ -1,8 +1,9 @@
 """Safety binary entities."""
 from homeassistant.components.binary_sensor import BinarySensorEntity
-from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
 
 class ShadowActive(BinarySensorEntity):
     _attr_has_entity_name = True

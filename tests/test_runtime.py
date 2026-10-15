@@ -1,7 +1,6 @@
 """Safety tests for the only runtime writer."""
 from __future__ import annotations
 
-import asyncio
 import unittest
 
 from custom_components.ecoflow_smart_charge.runtime import Runtime

@@ -1,8 +1,9 @@
 """A reversible armed indicator; never a hardware switch."""
 from homeassistant.components.switch import SwitchEntity
-from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
 
 class ArmedSwitch(SwitchEntity):
     _attr_has_entity_name = True

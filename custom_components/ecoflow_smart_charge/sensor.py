@@ -1,8 +1,9 @@
 """Status sensors."""
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
 
 class StatusSensor(SensorEntity):
     _attr_has_entity_name = True
