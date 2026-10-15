@@ -1,8 +1,14 @@
 {
-  "executed": false,
-  "status": "OPEN: not passed",
-  "docker_path": null,
+  "executed": true,
+  "validation_completed": false,
+  "passed": false,
+  "exit_code": 1,
+  "status": "OPEN: official container executed, repository lookup failed (404/Not Found)",
+  "docker_path": "/usr/bin/docker",
+  "daemon_access": "sudo -n docker (unprivileged socket access denied)",
   "public_repository_publication_authorized": false,
   "official_action_commit": "1ebf01c408f29afcb6406bd431bc98fd8cbb15aa",
-  "reason": "Docker unavailable; full HACS network repository checks require future authorized public repository. Offline packaging tests are not official HACS validation."
+  "image_digest": "ghcr.io/hacs/action@sha256:dc92fdad2f6ffbe74bffb7269d781ea8e064f52d9bb486cdf3925d74e7ab6ebf",
+  "authentication": "Existing GitHub CLI credential streamed via Docker env-file stdin; never stored or printed",
+  "reason": "Operator enabled Docker mid-run. Official authenticated HACS container now runs but target repository is not accessible (GitHubNotFoundException; independent gh api HTTP404). No repository created/published. No check ignored. Full candidate acceptance remains open; HACS action validates remote GitHub content, not merely mounted local files."
 }

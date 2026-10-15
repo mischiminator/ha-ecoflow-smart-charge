@@ -37,7 +37,8 @@ commit (a file cannot embed its own commit hash).
 | Whole-tree Ruff0.17.0 | check PASS; format check PASS | final-ruff.log, final-format.log |
 | git diff --check | PASS | task handoff |
 | Official source hassfest | Exit0;1 integration,0 invalid; all23 validators, no warnings | final-hassfest.log |
-| Official full HACS action | NOT EXECUTED / OPEN: Docker absent, no authorized public repository | final-hacs.json |
+| Official full HACS action | EXECUTED but FAIL before validation: authenticated target-repository lookup returns Not Found; not passed | final-hacs.json, integration-hacs-authenticated-container.log |
+| Official Docker hassfest | Exit0;1 integration,0 invalid; all23 validators, no warnings; read-only mount/network disabled | integration-hassfest-container.log |
 
 Product tests disable IP sockets and allow only Unix sockets for the HA harness.
 Real HA ConfigFlow/OptionsFlow/setup/reload/disable/unload, service registry,
@@ -101,8 +102,11 @@ HA call, dashboard change, device command or direct storage-file mutation occurr
 
 ## Explicit remaining limitations and external gates
 
-1. Full official HACS action not executable here; custom-repository/public release
-   checks and transitive mutable container images remain open.
+1. Operator enabled Docker mid-run. The official authenticated HACS container was
+   executed and failed at repository lookup (GitHubNotFoundException; independent
+   gh api HTTP404). No remote repository was created or published. Full validation
+   remains OPEN, not passed. Both container digests are now recorded in
+   DOCKER-VALIDATION.md; CI wrapper transitive image tags remain mutable.
 2. Do not push inherited Git history. Create a separately reviewed clean publishable
    history only under explicit authorization; retain private original evidence.
 3. Legacy source repositories lack a clear root license; inherited MIT does not
