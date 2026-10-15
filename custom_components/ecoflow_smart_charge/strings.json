@@ -1,0 +1,247 @@
+{
+  "title": "EcoFlow Smart Charge",
+  "config": {
+    "step": {
+      "user": {
+        "title": "EcoFlow Smart Charge",
+        "description": "Select existing entities. No cloud credentials. Use identical slot order in all battery lists. Starts in shadow only.",
+        "data": {
+          "name": "Name",
+          "grid_energy_entity": "Required net grid energy meter",
+          "price_entity": "Current published electricity price",
+          "price_window_entity": "Best-price window",
+          "pv_entity": "Measured PV energy",
+          "soc_entities": "Three battery SOC sensors (slot order)",
+          "reserve_entities": "Three reserve numbers (same slot order)",
+          "self_powered_entities": "Three Self-powered switches (same slot order)",
+          "operating_mode_entities": "Three operating-mode selects (same slot order)",
+          "forecast_today_entity": "Total PV forecast today",
+          "forecast_remaining_entity": "Remaining PV forecast today",
+          "forecast_tomorrow_entity": "Total PV forecast tomorrow",
+          "sun_entity": "Sun state",
+          "charge_energy_entities": "Three charge energy sources (slot order)",
+          "discharge_energy_entities": "Three discharge energy sources (slot order)",
+          "tariff_key": "Explicit tariff/home key",
+          "legacy_writer_entities": "Legacy price-charge writers to interlock"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure sources",
+        "description": "Only without a pending session. Preserve slot order and repeat shadow comparison afterwards.",
+        "data": {
+          "name": "Name",
+          "grid_energy_entity": "Required net grid energy meter",
+          "price_entity": "Current published electricity price",
+          "price_window_entity": "Best-price window",
+          "pv_entity": "Measured PV energy",
+          "soc_entities": "Three battery SOC sensors (slot order)",
+          "reserve_entities": "Three reserve numbers (same slot order)",
+          "self_powered_entities": "Three Self-powered switches (same slot order)",
+          "operating_mode_entities": "Three operating-mode selects (same slot order)",
+          "forecast_today_entity": "Total PV forecast today",
+          "forecast_remaining_entity": "Remaining PV forecast today",
+          "forecast_tomorrow_entity": "Total PV forecast tomorrow",
+          "sun_entity": "Sun state",
+          "charge_energy_entities": "Three charge energy sources (slot order)",
+          "discharge_energy_entities": "Three discharge energy sources (slot order)",
+          "tariff_key": "Explicit tariff/home key",
+          "legacy_writer_entities": "Legacy price-charge writers to interlock"
+        }
+      }
+    },
+    "error": {
+      "three_batteries_required": "Select exactly three entities in each battery list.",
+      "duplicate_reserves": "Each entity in a battery list must be distinct.",
+      "source_invalid": "Missing, unavailable, wrong or duplicate source, or invalid tariff/writer selection.",
+      "unit_invalid": "Source unit or value is invalid."
+    },
+    "abort": {
+      "already_configured": "At least one reserve target is already owned by another entry.",
+      "recovery_pending": "Pending recovery: source mappings cannot be changed.",
+      "reconfigure_successful": "Sources reconfigured; entry will reload."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Controller options",
+        "description": "Active control requires explicitly confirmed safe cutover. Migration must preserve existing values instead of replacing them with defaults.",
+        "data": {
+          "mode": "Controller mode",
+          "minimum_price_advantage_percent": "Minimum price advantage (%)",
+          "charge_ceiling_ct": "Charge price ceiling (ct/kWh)",
+          "master": "Allow price charging (not cutover approval)",
+          "efficiency": "Total efficiency (fraction 0..1)",
+          "wear_cost_ct": "Wear (ct/kWh delivered)",
+          "minimum_net_saving_ct": "Minimum net saving (ct/kWh delivered)",
+          "capacity_kwh": "Capacity per battery (kWh)"
+        }
+      }
+    },
+    "error": {
+      "invalid_setting": "Invalid or non-finite setting outside supported bounds.",
+      "invalid_master": "Master must be a boolean.",
+      "unsafe_mode": "Activation requires explicitly confirmed safe cutover.",
+      "unknown_setting": "Unknown setting."
+    }
+  },
+  "services": {
+    "recalculate": {
+      "name": "Recalculate plan",
+      "description": "Refresh and evaluate the configured sources through the runtime. Shadow never sends hardware commands; in active mode normal safety and recovery gates still apply.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Integration entry",
+          "description": "Select exactly one loaded EcoFlow Smart Charge entry."
+        }
+      }
+    },
+    "request_cutover": {
+      "name": "Request supervised cutover",
+      "description": "Explicitly request active control. Requires recorded shadow comparison, fresh valid sources, no pending recovery, confirmed reserves and all configured legacy writers off. Does not disable legacy automations.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Integration entry",
+          "description": "Select exactly one loaded EcoFlow Smart Charge entry."
+        },
+        "confirmed": {
+          "name": "Explicit confirmation",
+          "description": "Intentionally set true only after all safety checks; never default opt-in."
+        }
+      }
+    },
+    "confirm_recovery": {
+      "name": "Authorize exclusive recovery",
+      "description": "Explicitly authorize restoration of saved individual reserves outside shadow, only with exclusive writer ownership. Acknowledgement is not readback; incomplete restores remain pending. Never starts charging.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Integration entry",
+          "description": "Select exactly one loaded EcoFlow Smart Charge entry."
+        },
+        "confirmed": {
+          "name": "Explicit confirmation",
+          "description": "Intentionally set true only after all safety checks; never default opt-in."
+        }
+      }
+    },
+    "record_shadow_comparison": {
+      "name": "Record shadow comparison",
+      "description": "Record only exactly matching valid shadow output and comparison values; no hardware commands.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Integration entry",
+          "description": "Select exactly one loaded EcoFlow Smart Charge entry."
+        },
+        "expected": {
+          "name": "Expected comparison",
+          "description": "Mapping containing allowed, reason, profile_valid, advantage (number or null), net_saving. Use unrounded values."
+        }
+      }
+    },
+    "import_state": {
+      "name": "Preview/import migration state",
+      "description": "Validate versioned settings, learning, session and marker in shadow. Preview is default; apply=true persists without device commands.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Integration entry",
+          "description": "Select exactly one loaded EcoFlow Smart Charge entry."
+        },
+        "payload": {
+          "name": "Versioned state",
+          "description": "Complete validated import envelope, not raw HA storage or backup data."
+        },
+        "apply": {
+          "name": "Apply reviewed preview",
+          "description": "Leave false for preview. Set true only after privately comparing all values."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "Controller status"
+      },
+      "reason": {
+        "name": "Decision reason"
+      },
+      "missing_energy_kwh": {
+        "name": "Missing energy"
+      },
+      "solar_surplus_kwh": {
+        "name": "Solar surplus"
+      },
+      "avoided_price_ct": {
+        "name": "Avoided price"
+      },
+      "net_saving_ct": {
+        "name": "Net saving"
+      },
+      "price_advantage_percent": {
+        "name": "Price advantage"
+      },
+      "pv_correction": {
+        "name": "PV correction"
+      },
+      "full_marker_day": {
+        "name": "Full marker day"
+      }
+    },
+    "binary_sensor": {
+      "shadow_active": {
+        "name": "Shadow active"
+      },
+      "recovery_pending": {
+        "name": "Recovery pending"
+      },
+      "sources_valid": {
+        "name": "Sources valid"
+      },
+      "writer_locked": {
+        "name": "Writer locked"
+      },
+      "permission": {
+        "name": "Charge permission"
+      }
+    },
+    "number": {
+      "minimum_price_advantage": {
+        "name": "Minimum price advantage"
+      },
+      "charge_ceiling_ct": {
+        "name": "Charge price ceiling"
+      },
+      "efficiency": {
+        "name": "Total efficiency"
+      },
+      "wear_cost_ct": {
+        "name": "Wear cost"
+      },
+      "minimum_net_saving_ct": {
+        "name": "Minimum net saving"
+      },
+      "capacity_kwh": {
+        "name": "Capacity per battery"
+      }
+    },
+    "switch": {
+      "master": {
+        "name": "Price charging enabled"
+      }
+    },
+    "select": {
+      "mode": {
+        "name": "Controller mode",
+        "state": {
+          "shadow": "Shadow",
+          "active": "Active"
+        }
+      }
+    },
+    "button": {
+      "recalculate": {
+        "name": "Recalculate plan"
+      }
+    }
+  }
+}

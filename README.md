@@ -1,55 +1,62 @@
 # EcoFlow Smart Charge
 
-Native Home Assistant custom integration for a **shadow-first** EcoFlow price-charge controller. It orchestrates existing Home Assistant entities from the already-installed EcoFlow integration; it does not create an EcoFlow cloud connection and does not collect credentials.
+Native Home Assistant orchestration of three batteries through entities supplied by an existing EcoFlow integration. No new EcoFlow cloud connection, account or credentials. Domain: `ecoflow_smart_charge`.
 
-> Safety status: this repository is an implementation candidate, not an installed controller. HA Core 2026.10.1 lifecycle/config-flow tests are executed locally, but the Recorder-to-planner adapter, real tariff parsing, migration importer, and active-controller cutover remain incomplete. Do not use `active` mode until those pieces and a supervised, explicitly approved cutover have passed.
+## Status / Entwicklungsstand
 
-## Safety requirements (implementation incomplete)
+Implementation candidate, not a published release or an approved live controller. Packaging checks do not prove behavioral parity. Core/HA work is developed in parallel; the integration task must reconcile the [interface](docs/foundation/INTERFACE.md), translations, services and [35 parity criteria](docs/foundation/PARITY.md) against actual code before release. Do not activate this candidate on production hardware.
 
-- New entries start in `shadow`. Absolute zero hardware calls on every shadow route is required; the inherited recovery route still needs adapter hardening.
-- The pure planner rejects stale sources, invalid rows, insufficient history, price gaps, invalid parameters, missing protection mode, price-ceiling, solar-surplus, marker, price-advantage and net-saving failures.
-- The required grid source must be the operator-selected mandated net-energy meter; no fallback EcoFlow/Tibber counter is implemented.
-- A session journal captures the three individual pre-session reserves using HA `Store.async_save` before any real command. Restoration only clears after individual readback; partial failures remain recovery pending.
-- Active mode is deliberately not automatically cut over, and the integration never changes EcoFlow operating modes.
+Implementierungskandidat, keine freigegebene Produktivversion. Shadow ist der verpflichtende Standard. Ein grüner Packaging-Test ist keine Freigabe zum Laden. Migration, Import, Kartenanpassung und Recovery müssen mit dem fertig integrierten Code nachgewiesen sein. Fehlende Import-/Vergleichsfunktionen sind eine Cutover-Sperre, kein Anlass für manuelle Speicheränderungen.
 
-## Planning model
+## Model / Planungsmodell
 
-The HA-independent core uses the last 14 complete days and rejects any hourly bucket with fewer than three valid samples. Load reconstruction is:
+- Read only the selected mandated net grid-energy meter. Never substitute an EcoFlow or tariff consumption counter or merge histories from different meters.
+- Reconstruct hourly household load as grid net energy + measured PV − three battery charge energies + three battery discharge energies. Use the last 14 completed local days, exclude today, normalize Wh/kWh and require at least three valid observations in each local hour; DST is elapsed-time aware.
+- Distribute published solar forecasts by the historical PV profile. Learn a correction from up to 14 valid completed-day actual/forecast ratios, without overwriting unevaluated probes on restart.
+- Use only actually published quarter-hour prices for the selected tariff. Price gaps, stale inputs, unavailable devices, missing protection modes and an inactive best-price window block charging.
+- Compare the unrounded advantage `(avoided_price - current_price) / avoided_price * 100`. The default for NEW installations is 20%; migration preserves existing settings. Efficiency, wear, weighted future consumption and known price coverage affect projected net saving. These are model estimates, not guaranteed savings.
+- Save all three original individual reserves before commands, serialize the sole writer and require independent device readback. A service acknowledgement is not restoration. Keep pending recovery and the solar-day full-charge marker across restart.
 
-`grid net energy + measured PV - all three battery charge energies + all three battery discharge energies`
+These are required behavior contracts. See the final integration report for executed product tests, not this feature list alone.
 
-PV forecast is distributed by the historic hourly PV profile. A median PV correction keeps at most 14 valid actual/forecast ratios, accepting only 23+ hourly rows and ratios 0..5. Economics use a consumption-weighted future price, total efficiency plus wear cost, and the unrounded price advantage:
+## Safety / Sicherheit
 
-`(avoided_price - current_price) / avoided_price * 100`
+Shadow must send zero hardware calls, including restore, restart, unload, buttons and timers. A pending session in shadow stays pending. Restoration requires explicitly authorized exclusive recovery OUTSIDE shadow, then returns to shadow. Never enable old and new writers simultaneously. Unknown conflict state blocks writes. The integration must not change operating mode to obtain permission to charge.
 
-The public new-install default is 20%. A migration must explicitly import the existing threshold and ceiling; it must not reset either value.
+Shadow darf auch keine Reserve zurückstellen. Vor Legacy-Reaktivierung müssen die ursprünglichen Einzelreserven unter exklusiver Freigabe außerhalb von Shadow wiederhergestellt und frisch zurückgelesen sein. Bei unklarer Zuordnung oder fehlenden Originalwerten: beide Regler gesperrt lassen, nicht raten.
 
-## Install (future HACS publication)
+## Requirements and future installation
 
-After a verified public GitHub release, add `mischiminator/ha-ecoflow-smart-charge` in HACS as a **Custom Integration**, install/restart Home Assistant, then configure it under Devices & services. This has not been automatically installed or read back in this development task.
+Declared/test-target minimum: Home Assistant 2026.10.1; development Python 3.14.7 (HA requires >=3.14.2). Recorder history, published tariff prices, PV forecasts, best-price window, sun state and three complete battery bindings are required. Source units, history coverage and service capabilities must be validated. No private entity IDs are public defaults.
 
-## Migration and rollback
+Only AFTER a separately approved, validated public GitHub release:
 
-1. Keep legacy automations enabled and configure the integration with the required smart-meter source.
-2. Import validated current options and inactive session/learning state through an integration-owned import UX (never `.storage`). Preserve the imported settings without replacing them with defaults.
-3. Run shadow comparisons across recorded price cycles. Document expected differences caused by the mandated source transition; do not fabricate history or substitute a source.
-4. Confirm Recorder unit/history availability and profile transition evidence.
-5. Take a fresh legacy automation/card backup. With explicit approval only, disable command-capable legacy control writers, then request supervised cutover.
-6. If anything fails, stop new charging and restore individual reserves under explicitly authorized exclusive recovery ownership. Confirm all readbacks before returning to shadow and re-enabling legacy writers. Shadow itself must never send restore commands.
+1. In HACS, open Custom repositories, add `mischiminator/ha-ecoflow-smart-charge`, category Integration, and download it. This is not a claim of default-catalog inclusion.
+2. Restart Home Assistant, then Settings → Devices & services → Add integration → EcoFlow Smart Charge.
+3. Select existing sources and all battery lists in identical slot order. Leave shadow enabled. Do not call cutover or recovery actions merely to test installation.
+4. Follow [Migration und Rollback (Deutsch)](docs/migration/MIGRATION-DE.md) or the [English runbook](docs/migration/MIGRATION-EN.md). Import existing settings only through the final validated integration-owned importer; never edit HA storage files.
 
-## Development checks
+No HACS installation, public repository or hardware action has been performed by this packaging task.
 
-```sh
-.venv/bin/python -m pytest tests -q -o asyncio_mode=auto
-.venv/bin/python -m json.tool custom_components/ecoflow_smart_charge/manifest.json
-```
+## Operation and dashboard
 
-CI additionally declares Ruff, HACS validation, and Hassfest. The local HA-compatible harness covers ConfigFlow and setup/unload; the required Recorder adapter and its populated-history/DST/unit tests are still outstanding.
+All native controls/actions must route through the same runtime guard. Action names are `recalculate`, `record_shadow_comparison`, `request_cutover`, `confirm_recovery` and `import_state`; every action requires `config_entry_id`. Cutover and recovery also require intentional `confirmed: true`; import defaults to preview with `apply: false`. See [ACTIONS-IMPORT.md](docs/migration/ACTIONS-IMPORT.md) for the current validated schema and a synthetic inactive import example. Use the integration's action selector, not a copied private entry identifier. Recalculate is non-writing in shadow; it must not be described as unconditionally non-writing in active mode. Final code/schema alignment belongs to integration reconciliation.
 
-## Privacy
+The existing price-charge card is NOT compatible through entity mapping alone. Its legacy master validation and helper service calls require the explicit opt-in update described in [CARD-COMPATIBILITY.md](docs/migration/CARD-COMPATIBILITY.md). Until that update is implemented and tested, use native HA entity cards; retain the old dashboard unchanged for rollback.
 
-Do not commit inventory snapshots, backups, Home Assistant URLs, tokens, serials, raw histories, or dashboard exports. Diagnostics deliberately expose only a small mode/status summary.
+## Local checks
 
-## Lizenz
+    uv venv --python 3.14.7 .venv
+    uv pip sync --python .venv/bin/python --require-hashes requirements-test.lock
+    uv pip install --python .venv/bin/python -r requirements-lint.txt
+    .venv/bin/python tools/run_tests.py
+    .venv/bin/python -m ruff check .
+    .venv/bin/python -m ruff format --check .
 
-MIT. Economic values are projections from recorded and forecast data; they are not a savings guarantee.
+The test runner disables IP sockets (local Unix sockets are allowed for HA). HA/plugin dependencies are exactly pinned with hashes. See [VALIDATION.md](docs/release/VALIDATION.md) for official hassfest/HACS commands, tool provenance and limitations; [PACKAGING-REPORT.md](docs/release/PACKAGING-REPORT.md) records this lane's evidence. CI is validation-only and never deploys, publishes or exercises hardware.
+
+## Privacy, provenance and release gates
+
+Do not commit snapshots, backups, real entity mappings, household histories, tokens, serials, Home Assistant URLs or diagnostic exports. Review diagnostics before sharing. [Diagnostics requirements](docs/release/DIAGNOSTICS.md), [license provenance](docs/release/PROVENANCE.md) and [release checklist](docs/release/RELEASE-CHECKLIST.md) are mandatory gates. Earlier local history contains private material; do not push this inherited history. Create a separately reviewed sanitized publishable history only after the parallel work is complete and publication is explicitly authorized.
+
+MIT for this repository's original work; see LICENSE and the provenance gate for any reused sources. No affiliation with or endorsement by EcoFlow, Tibber, Home Assistant or HACS is implied.

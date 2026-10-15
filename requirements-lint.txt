@@ -1,0 +1,2 @@
+# Separate from the frozen, hashed Home Assistant test environment.
+ruff==0.17.0

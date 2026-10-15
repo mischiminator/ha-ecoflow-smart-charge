@@ -1,28 +1,53 @@
 name: Validate
-on:
+'on':
   pull_request:
   push:
+  workflow_dispatch:
   schedule:
     - cron: '17 3 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: {python-version: '3.14'}
-      - run: python -m pip install --upgrade pip
-      - run: python -m pip install homeassistant==2026.10.1 pytest-homeassistant-custom-component==0.13.372 ruff
-      - run: python -m pytest tests -q -o asyncio_mode=auto
-      - run: python -m ruff check .
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+      - uses: actions/setup-python@ff73b2463e2f3baa703f830da214b8dfeeaeccf8
+        with:
+          python-version: '3.14.7'
+          cache: pip
+          cache-dependency-path: requirements-test.lock
+      - name: Install exact hashed HA test environment and pinned lint tool
+        run: |
+          python -m pip install --require-hashes -r requirements-test.lock
+          python -m pip install -r requirements-lint.txt
+          python -m pip check
+      - name: Offline unit and real Home Assistant tests
+        run: python tools/run_tests.py --junitxml=pytest-results.xml
+      - name: Ruff lint
+        run: python -m ruff check .
+      - name: Ruff format
+        run: python -m ruff format --check .
   hacs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: hacs/action@main
-        with: {category: integration}
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+      - uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa
+        with:
+          category: integration
+          repository: mischiminator/ha-ecoflow-smart-charge
+          comment: false
   hassfest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: home-assistant/actions/hassfest@master
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+      - uses: home-assistant/actions/hassfest@50baf3a307f87100cf550d4ae127746595030d5d

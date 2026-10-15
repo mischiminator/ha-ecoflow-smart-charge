@@ -6,3 +6,11 @@ __pycache__/
 inventory/
 backups/
 *.env
+.ruff_cache/
+htmlcov/
+pytest-results.xml
+*.log
+.storage/
+diagnostics/
+release-artifacts/
+dist/

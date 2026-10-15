@@ -1,11 +1,12 @@
 {
   "domain": "ecoflow_smart_charge",
   "name": "EcoFlow Smart Charge",
-  "version": "0.1.0",
-  "documentation": "https://github.com/mischiminator/ha-ecoflow-smart-charge",
-  "issue_tracker": "https://github.com/mischiminator/ha-ecoflow-smart-charge/issues",
+  "after_dependencies": ["recorder"],
   "codeowners": ["@mischiminator"],
   "config_flow": true,
+  "documentation": "https://github.com/mischiminator/ha-ecoflow-smart-charge",
   "integration_type": "service",
-  "iot_class": "local_push"
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/mischiminator/ha-ecoflow-smart-charge/issues",
+  "version": "0.1.0"
 }

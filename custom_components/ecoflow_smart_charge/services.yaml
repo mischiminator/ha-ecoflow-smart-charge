@@ -1,24 +1,55 @@
 recalculate:
-  name: Recalculate shadow plan
-  description: Recompute through the configured entry without writing to devices.
   fields:
     config_entry_id:
       required: true
       selector:
-        text:
-confirm_recovery:
-  name: Confirm recovery
-  description: Permit a pending journal recovery only after operator confirmation and source readback.
+        config_entry:
+          integration: ecoflow_smart_charge
+record_shadow_comparison:
   fields:
     config_entry_id:
       required: true
       selector:
-        text:
+        config_entry:
+          integration: ecoflow_smart_charge
+    expected:
+      required: true
+      selector:
+        object:
 request_cutover:
-  name: Request cutover
-  description: Request active mode; the runtime must still validate all safety gates.
   fields:
     config_entry_id:
       required: true
       selector:
-        text:
+        config_entry:
+          integration: ecoflow_smart_charge
+    confirmed:
+      required: true
+      selector:
+        boolean:
+confirm_recovery:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: ecoflow_smart_charge
+    confirmed:
+      required: true
+      selector:
+        boolean:
+import_state:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: ecoflow_smart_charge
+    payload:
+      required: true
+      selector:
+        object:
+    apply:
+      default: false
+      selector:
+        boolean:

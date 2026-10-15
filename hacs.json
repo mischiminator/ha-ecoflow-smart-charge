@@ -1,3 +1,4 @@
 {
-  "name": "EcoFlow Smart Charge"
+  "name": "EcoFlow Smart Charge",
+  "homeassistant": "2026.10.1"
 }
