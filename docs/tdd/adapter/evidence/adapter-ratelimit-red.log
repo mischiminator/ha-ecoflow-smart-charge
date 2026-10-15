@@ -1,0 +1,17 @@
+......F.......                                                           [100%]
+=================================== FAILURES ===================================
+______________ test_unconfirmed_command_retries_are_rate_limited _______________
+
+    async def test_unconfirmed_command_retries_are_rate_limited():
+        runtime, _, values, _, calls, _ = await rig()
+        await runtime.async_start(values)
+        assert len(calls) == 3
+        await runtime.async_retry_charge()
+>       assert len(calls) == 3
+E       AssertionError: assert 6 == 3
+E        +  where 6 = len([('number.slot_0', 100.0), ('number.slot_1', 100.0), ('number.slot_2', 100.0), ('number.slot_0', 100.0), ('number.slot_1', 100.0), ('number.slot_2', 100.0)])
+
+tests/ha/test_executor.py:97: AssertionError
+=========================== short test summary info ============================
+FAILED tests/ha/test_executor.py::test_unconfirmed_command_retries_are_rate_limited
+1 failed, 13 passed in 0.16s

@@ -1,4 +1,5 @@
 """Constants for EcoFlow Smart Charge."""
+
 DOMAIN = "ecoflow_smart_charge"
 PLATFORMS = ("sensor", "binary_sensor", "number", "select", "switch", "button")
 MODE_SHADOW = "shadow"

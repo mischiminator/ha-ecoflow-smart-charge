@@ -1,4 +1,5 @@
 """Config flow validation must reject incomplete three-battery controller mappings."""
+
 from __future__ import annotations
 
 import pytest
@@ -15,6 +16,18 @@ async def test_config_flow_rejects_incomplete_three_battery_mapping(hass) -> Non
         result["flow_id"],
         {
             "name": "Test controller",
+            "forecast_today_entity": "sensor.forecast_today",
+            "forecast_remaining_entity": "sensor.forecast_remaining",
+            "forecast_tomorrow_entity": "sensor.forecast_tomorrow",
+            "sun_entity": "sun.test",
+            "tariff_key": "Synthetic",
+            "legacy_writer_entities": ["automation.legacy"],
+            "charge_energy_entities": ["sensor.charge_1", "sensor.charge_2", "sensor.charge_3"],
+            "discharge_energy_entities": [
+                "sensor.discharge_1",
+                "sensor.discharge_2",
+                "sensor.discharge_3",
+            ],
             "grid_energy_entity": "sensor.grid",
             "price_entity": "sensor.price",
             "price_window_entity": "binary_sensor.window",

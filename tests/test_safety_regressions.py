@@ -1,4 +1,5 @@
 """Regression tests for fail-closed planning and durable recovery behavior."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -32,7 +33,11 @@ def _input(**changes) -> PlannerInput:
     profile = HourlyProfile((2.0,) * 24, (0.0,) * 24, (3,) * 24, True, "ok")
     data = {
         "now": now,
-        "prices": tuple(PricePoint(now + timedelta(hours=i), 10.0 if i == 0 else 40.0) for i in range(8)),
+        "prices": tuple(
+            PricePoint(now + timedelta(minutes=15 * i), 10.0 if i == 0 else 40.0) for i in range(64)
+        ),
+        "current_price_ct": 10.0,
+        "below_horizon": False,
         "price_series_updated": now,
         "best_price_window": True,
         "profile": profile,
@@ -57,16 +62,20 @@ def _input(**changes) -> PlannerInput:
 
 
 def test_planner_requires_current_price_to_be_in_published_interval() -> None:
-    candidate = _input(prices=(PricePoint(_input().now - timedelta(hours=1), 10.0), PricePoint(_input().now, 40.0)))
+    candidate = _input(
+        prices=(PricePoint(_input().now - timedelta(hours=1), 10.0), PricePoint(_input().now, 40.0))
+    )
     result = decide(candidate)
     assert not result.allowed
-    assert result.reason == "price_gap"
+    assert result.reason == "current_price_mismatch"
 
 
 def test_planner_accepts_current_published_interval_when_now_is_not_on_boundary() -> None:
-    now = _input().now + timedelta(minutes=17)
-    prices = tuple(PricePoint(_input().now + timedelta(hours=i), 10.0 if i == 0 else 40.0) for i in range(8))
-    result = decide(_input(now=now, prices=prices, price_series_updated=now, sunset=now + timedelta(hours=4)))
+    now = _input().now + timedelta(minutes=2)
+    prices = _input().prices
+    result = decide(
+        _input(now=now, prices=prices, price_series_updated=now, sunset=now + timedelta(hours=4))
+    )
     assert result.allowed
 
 
@@ -74,25 +83,41 @@ def test_planner_accepts_current_published_interval_when_now_is_not_on_boundary(
 async def test_second_start_does_not_overwrite_persisted_individual_reserves() -> None:
     store = PersistentSessionStore(MemoryStore())
     calls: list[tuple[str, float]] = []
-    runtime = Runtime("active", store, lambda _entity: 3.0, lambda entity, value: calls.append((entity, value)))
-    assert await runtime.async_start({"number.one": 3.0, "number.two": 4.0})
+    runtime = Runtime(
+        "active", store, lambda _entity: 3.0, lambda entity, value: calls.append((entity, value))
+    )
+    await store.async_capture_before_command(
+        "persisted",
+        {"number.one": 3.0, "number.two": 4.0},
+        {"number.one": 100.0, "number.two": 100.0},
+    )
     assert not await runtime.async_start({"number.one": 88.0, "number.two": 99.0})
     assert store.record is not None
     assert store.record.reserves_before == {"number.one": 3.0, "number.two": 4.0}
-    assert calls == [("number.one", 100.0), ("number.two", 100.0)]
+    assert calls == []
 
 
 @pytest.mark.asyncio
 async def test_restore_marks_readback_pending_until_a_second_confirmed_read() -> None:
     store = PersistentSessionStore(MemoryStore())
-    await store.async_capture_before_command("session", {"number.one": 3.0}, {"number.one": 100.0})
-    value = {"number.one": 7.0}
-    calls: list[tuple[str, float]] = []
-    runtime = Runtime("active", store, lambda entity: value[entity], lambda entity, target: calls.append((entity, target)))
-    assert not await runtime.async_restore()
-    assert store.record is not None
+    originals = {"number.one": 3.0, "number.two": 4.0, "number.three": 5.0}
+    await store.async_capture_before_command("session", originals, {e: 100.0 for e in originals})
+    values = {e: 100.0 for e in originals}
+    stamps = {e: datetime.now(UTC) for e in originals}
+    calls = []
+    runtime = Runtime(
+        "shadow",
+        store,
+        lambda e: (values[e], stamps[e]),
+        lambda e, v: calls.append((e, v)),
+        writers=tuple(originals),
+        evaluate=lambda: {"owned": True},
+    )
+    assert not await runtime.async_confirm_recovery(confirmed=True)
+    assert store.record is not None and runtime.mode == "shadow"
     assert store.record.phase == "restore_pending"
-    assert calls == [("number.one", 3.0)]
-    value["number.one"] = 3.0
-    assert await runtime.async_restore()
-    assert store.record is None
+    assert len(calls) == 3
+    values.update(originals)
+    stamps.update({e: datetime.now(UTC) for e in originals})
+    assert await runtime.async_confirm_recovery(confirmed=True)
+    assert store.record is None and runtime.mode == "shadow"

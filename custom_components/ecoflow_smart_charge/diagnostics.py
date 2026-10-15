@@ -1,4 +1,5 @@
 """Safe diagnostics: summary only, no raw entity IDs, attributes, or histories."""
+
 from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry

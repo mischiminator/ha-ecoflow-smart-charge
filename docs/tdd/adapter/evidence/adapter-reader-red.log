@@ -1,0 +1,946 @@
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+______________ test_reader_parses_only_selected_published_tariff _______________
+
+    async def test_reader_parses_only_selected_published_tariff():
+>       from custom_components.ecoflow_smart_charge.reader import parse_prices
+E       ModuleNotFoundError: No module named 'custom_components.ecoflow_smart_charge.reader'
+
+tests/ha/test_reader.py:8: ModuleNotFoundError
+_____________ test_source_freshness_exclusive_and_future[599-True] _____________
+
+seconds = 599, expected = True
+
+    @pytest.mark.parametrize('seconds,expected',[(599,True),(600,False),(-1,False)])
+    async def test_source_freshness_exclusive_and_future(seconds,expected):
+>       from custom_components.ecoflow_smart_charge.reader import fresh
+E       ModuleNotFoundError: No module named 'custom_components.ecoflow_smart_charge.reader'
+
+tests/ha/test_reader.py:16: ModuleNotFoundError
+____________ test_source_freshness_exclusive_and_future[600-False] _____________
+
+seconds = 600, expected = False
+
+    @pytest.mark.parametrize('seconds,expected',[(599,True),(600,False),(-1,False)])
+    async def test_source_freshness_exclusive_and_future(seconds,expected):
+>       from custom_components.ecoflow_smart_charge.reader import fresh
+E       ModuleNotFoundError: No module named 'custom_components.ecoflow_smart_charge.reader'
+
+tests/ha/test_reader.py:16: ModuleNotFoundError
+_____________ test_source_freshness_exclusive_and_future[-1-False] _____________
+
+seconds = -1, expected = False
+
+    @pytest.mark.parametrize('seconds,expected',[(599,True),(600,False),(-1,False)])
+    async def test_source_freshness_exclusive_and_future(seconds,expected):
+>       from custom_components.ecoflow_smart_charge.reader import fresh
+E       ModuleNotFoundError: No module named 'custom_components.ecoflow_smart_charge.reader'
+
+tests/ha/test_reader.py:16: ModuleNotFoundError
+________________ test_join_has_no_missing_stream_zero_fallback _________________
+
+    async def test_join_has_no_missing_stream_zero_fallback():
+>       from custom_components.ecoflow_smart_charge.reader import join_statistics
+E       ModuleNotFoundError: No module named 'custom_components.ecoflow_smart_charge.reader'
+
+tests/ha/test_reader.py:23: ModuleNotFoundError
+__________________ test_recorder_query_real_populated_sqlite ___________________
+
+recorder_mock = <Recorder(Recorder, started 126074318997184)>
+hass = <HomeAssistant RUNNING>
+
+    async def test_recorder_query_real_populated_sqlite(recorder_mock,hass):
+        from homeassistant.components.recorder.statistics import async_import_statistics
+        from homeassistant.components.recorder.models import StatisticMeanType
+>       from custom_components.ecoflow_smart_charge.reader import read_statistics
+E       ModuleNotFoundError: No module named 'custom_components.ecoflow_smart_charge.reader'
+
+tests/ha/test_reader.py:34: ModuleNotFoundError
+---------------------------- Captured stderr setup -----------------------------
+INFO:homeassistant.loader:Loaded homeassistant from homeassistant.components.homeassistant
+INFO:homeassistant.loader:Loaded recorder from homeassistant.components.recorder
+INFO:homeassistant.setup:Setting up recorder
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("statistics_meta")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("statistics_meta")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:ROLLBACK
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("events")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("events")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("event_data")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("event_data")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("event_types")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("event_types")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("states")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("states")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("state_attributes")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("state_attributes")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("states_meta")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("states_meta")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("statistics")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("statistics")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("statistics_short_term")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("statistics_short_term")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("statistics_meta")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("statistics_meta")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("recorder_runs")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("recorder_runs")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("migration_changes")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("migration_changes")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("schema_changes")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("schema_changes")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.table_info("statistics_runs")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA temp.table_info("statistics_runs")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:
+CREATE TABLE event_data (
+	data_id INTEGER NOT NULL,
+	hash BIGINT,
+	shared_data TEXT,
+	PRIMARY KEY (data_id)
+)
+
+
+INFO:sqlalchemy.engine.Engine:[no key 0.00005s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_event_data_hash ON event_data (hash)
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:
+CREATE TABLE event_types (
+	event_type_id INTEGER NOT NULL,
+	event_type VARCHAR(64),
+	PRIMARY KEY (event_type_id)
+)
+
+
+INFO:sqlalchemy.engine.Engine:[no key 0.00008s] ()
+INFO:sqlalchemy.engine.Engine:CREATE UNIQUE INDEX ix_event_types_event_type ON event_types (event_type)
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:
+CREATE TABLE state_attributes (
+	attributes_id INTEGER NOT NULL,
+	hash BIGINT,
+	shared_attrs TEXT,
+	PRIMARY KEY (attributes_id)
+)
+
+
+INFO:sqlalchemy.engine.Engine:[no key 0.00004s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_state_attributes_hash ON state_attributes (hash)
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:
+CREATE TABLE states_meta (
+	metadata_id INTEGER NOT NULL,
+	entity_id VARCHAR(255),
+	PRIMARY KEY (metadata_id)
+)
+
+
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:CREATE UNIQUE INDEX ix_states_meta_entity_id ON states_meta (entity_id)
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:
+CREATE TABLE statistics_meta (
+	id INTEGER NOT NULL,
+	statistic_id VARCHAR(255),
+	source VARCHAR(32),
+	unit_of_measurement VARCHAR(255),
+	unit_class VARCHAR(255),
+	has_mean BOOLEAN,
+	has_sum BOOLEAN,
+	name VARCHAR(255),
+	mean_type SMALLINT NOT NULL,
+	PRIMARY KEY (id)
+)
+
+
+INFO:sqlalchemy.engine.Engine:[no key 0.00004s] ()
+INFO:sqlalchemy.engine.Engine:CREATE UNIQUE INDEX ix_statistics_meta_statistic_id ON statistics_meta (statistic_id)
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:
+CREATE TABLE recorder_runs (
+	run_id INTEGER NOT NULL,
+	start DATETIME NOT NULL,
+	"end" DATETIME,
+	closed_incorrect BOOLEAN NOT NULL,
+	created DATETIME NOT NULL,
+	PRIMARY KEY (run_id)
+)
+
+
+INFO:sqlalchemy.engine.Engine:[no key 0.00007s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_recorder_runs_start_end ON recorder_runs (start, "end")
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:
+CREATE TABLE migration_changes (
+	migration_id VARCHAR(255) NOT NULL,
+	version SMALLINT NOT NULL,
+	PRIMARY KEY (migration_id)
+)
+
+
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:
+CREATE TABLE schema_changes (
+	change_id INTEGER NOT NULL,
+	schema_version INTEGER,
+	changed DATETIME NOT NULL,
+	PRIMARY KEY (change_id)
+)
+
+
+INFO:sqlalchemy.engine.Engine:[no key 0.00004s] ()
+INFO:sqlalchemy.engine.Engine:
+CREATE TABLE statistics_runs (
+	run_id INTEGER NOT NULL,
+	start DATETIME NOT NULL,
+	PRIMARY KEY (run_id)
+)
+
+
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_statistics_runs_start ON statistics_runs (start)
+INFO:sqlalchemy.engine.Engine:[no key 0.00002s] ()
+INFO:sqlalchemy.engine.Engine:
+CREATE TABLE events (
+	event_id INTEGER NOT NULL,
+	event_type CHAR(0),
+	event_data CHAR(0),
+	origin CHAR(0),
+	origin_idx SMALLINT,
+	time_fired CHAR(0),
+	time_fired_ts FLOAT,
+	context_id CHAR(0),
+	context_user_id CHAR(0),
+	context_parent_id CHAR(0),
+	data_id INTEGER,
+	context_id_bin BLOB,
+	context_user_id_bin BLOB,
+	context_parent_id_bin BLOB,
+	event_type_id INTEGER,
+	PRIMARY KEY (event_id),
+	FOREIGN KEY(data_id) REFERENCES event_data (data_id),
+	FOREIGN KEY(event_type_id) REFERENCES event_types (event_type_id)
+)
+
+
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_events_event_type_id_time_fired_ts ON events (event_type_id, time_fired_ts)
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_events_context_id_bin ON events (context_id_bin)
+INFO:sqlalchemy.engine.Engine:[no key 0.00002s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_events_time_fired_ts ON events (time_fired_ts)
+INFO:sqlalchemy.engine.Engine:[no key 0.00002s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_events_data_id ON events (data_id)
+INFO:sqlalchemy.engine.Engine:[no key 0.00002s] ()
+INFO:sqlalchemy.engine.Engine:
+CREATE TABLE states (
+	state_id INTEGER NOT NULL,
+	entity_id CHAR(0),
+	state VARCHAR(255),
+	attributes CHAR(0),
+	event_id SMALLINT,
+	last_changed CHAR(0),
+	last_changed_ts FLOAT,
+	last_reported_ts FLOAT,
+	last_updated CHAR(0),
+	last_updated_ts FLOAT,
+	old_state_id INTEGER,
+	attributes_id INTEGER,
+	context_id CHAR(0),
+	context_user_id CHAR(0),
+	context_parent_id CHAR(0),
+	origin_idx SMALLINT,
+	context_id_bin BLOB,
+	context_user_id_bin BLOB,
+	context_parent_id_bin BLOB,
+	metadata_id INTEGER,
+	PRIMARY KEY (state_id),
+	FOREIGN KEY(old_state_id) REFERENCES states (state_id),
+	FOREIGN KEY(attributes_id) REFERENCES state_attributes (attributes_id),
+	FOREIGN KEY(metadata_id) REFERENCES states_meta (metadata_id)
+)
+
+
+INFO:sqlalchemy.engine.Engine:[no key 0.00005s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_states_attributes_id ON states (attributes_id)
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_states_context_id_bin ON states (context_id_bin)
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_states_old_state_id ON states (old_state_id)
+INFO:sqlalchemy.engine.Engine:[no key 0.00002s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_states_last_updated_ts ON states (last_updated_ts)
+INFO:sqlalchemy.engine.Engine:[no key 0.00002s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_states_metadata_id_last_updated_ts ON states (metadata_id, last_updated_ts)
+INFO:sqlalchemy.engine.Engine:[no key 0.00002s] ()
+INFO:sqlalchemy.engine.Engine:
+CREATE TABLE statistics (
+	id INTEGER NOT NULL,
+	created CHAR(0),
+	created_ts FLOAT,
+	metadata_id INTEGER,
+	start CHAR(0),
+	start_ts FLOAT,
+	mean FLOAT,
+	mean_weight FLOAT,
+	min FLOAT,
+	max FLOAT,
+	last_reset CHAR(0),
+	last_reset_ts FLOAT,
+	state FLOAT,
+	sum FLOAT,
+	PRIMARY KEY (id),
+	FOREIGN KEY(metadata_id) REFERENCES statistics_meta (id) ON DELETE CASCADE
+)
+
+
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:CREATE UNIQUE INDEX ix_statistics_statistic_id_start_ts ON statistics (metadata_id, start_ts)
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_statistics_start_ts ON statistics (start_ts)
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:
+CREATE TABLE statistics_short_term (
+	id INTEGER NOT NULL,
+	created CHAR(0),
+	created_ts FLOAT,
+	metadata_id INTEGER,
+	start CHAR(0),
+	start_ts FLOAT,
+	mean FLOAT,
+	mean_weight FLOAT,
+	min FLOAT,
+	max FLOAT,
+	last_reset CHAR(0),
+	last_reset_ts FLOAT,
+	state FLOAT,
+	sum FLOAT,
+	PRIMARY KEY (id),
+	FOREIGN KEY(metadata_id) REFERENCES statistics_meta (id) ON DELETE CASCADE
+)
+
+
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:CREATE UNIQUE INDEX ix_statistics_short_term_statistic_id_start_ts ON statistics_short_term (metadata_id, start_ts)
+INFO:sqlalchemy.engine.Engine:[no key 0.00003s] ()
+INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_statistics_short_term_start_ts ON statistics_short_term (start_ts)
+INFO:sqlalchemy.engine.Engine:[no key 0.00002s] ()
+INFO:sqlalchemy.engine.Engine:COMMIT
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:SELECT schema_changes.schema_version AS schema_changes_schema_version
+FROM schema_changes ORDER BY schema_changes.change_id DESC
+ LIMIT ? OFFSET ?
+INFO:sqlalchemy.engine.Engine:[generated in 0.00009s] (1, 0)
+INFO:sqlalchemy.engine.Engine:ROLLBACK
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:PRAGMA main.index_list("events")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.index_info("ix_events_data_id")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.index_info("ix_events_time_fired_ts")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.index_info("ix_events_context_id_bin")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:PRAGMA main.index_info("ix_events_event_type_id_time_fired_ts")
+INFO:sqlalchemy.engine.Engine:[raw sql] ()
+INFO:sqlalchemy.engine.Engine:INSERT INTO schema_changes (schema_version, changed) VALUES (?, ?) RETURNING change_id
+INFO:sqlalchemy.engine.Engine:[generated in 0.00010s] (53, '2026-10-15 10:57:13.374714')
+INFO:sqlalchemy.engine.Engine:INSERT INTO statistics_runs (start) VALUES (?) RETURNING run_id
+INFO:sqlalchemy.engine.Engine:[generated in 0.00007s] ('2026-10-15 10:50:00.000000',)
+INFO:sqlalchemy.engine.Engine:COMMIT
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:SELECT schema_changes.schema_version AS schema_changes_schema_version
+FROM schema_changes ORDER BY schema_changes.change_id DESC
+ LIMIT ? OFFSET ?
+INFO:sqlalchemy.engine.Engine:[cached since 0.002655s ago] (1, 0)
+INFO:sqlalchemy.engine.Engine:ROLLBACK
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:SELECT schema_changes.schema_version AS schema_changes_schema_version
+FROM schema_changes ORDER BY schema_changes.change_id ASC
+ LIMIT ? OFFSET ?
+INFO:sqlalchemy.engine.Engine:[generated in 0.00006s] (1, 0)
+INFO:sqlalchemy.engine.Engine:ROLLBACK
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:SELECT migration_changes.migration_id, migration_changes.version
+FROM migration_changes
+INFO:sqlalchemy.engine.Engine:[generated in 0.00005s] ()
+INFO:sqlalchemy.engine.Engine:COMMIT
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:SELECT recorder_runs.run_id AS recorder_runs_run_id, recorder_runs.start AS recorder_runs_start, recorder_runs."end" AS recorder_runs_end, recorder_runs.closed_incorrect AS recorder_runs_closed_incorrect, recorder_runs.created AS recorder_runs_created
+FROM recorder_runs
+WHERE recorder_runs."end" IS NULL
+INFO:sqlalchemy.engine.Engine:[generated in 0.00006s] ()
+INFO:sqlalchemy.engine.Engine:INSERT INTO recorder_runs (start, "end", closed_incorrect, created) VALUES (?, ?, ?, ?) RETURNING run_id
+INFO:sqlalchemy.engine.Engine:[generated in 0.00008s] ('2026-10-15 10:57:13.363116', None, 0, '2026-10-15 10:57:13.378199')
+INFO:sqlalchemy.engine.Engine:SELECT recorder_runs.run_id AS recorder_runs_run_id, recorder_runs.start AS recorder_runs_start, recorder_runs."end" AS recorder_runs_end, recorder_runs.closed_incorrect AS recorder_runs_closed_incorrect, recorder_runs.created AS recorder_runs_created
+FROM recorder_runs ORDER BY recorder_runs.start ASC
+ LIMIT ? OFFSET ?
+INFO:sqlalchemy.engine.Engine:[generated in 0.00007s] (1, 0)
+INFO:sqlalchemy.engine.Engine:SELECT states.last_updated_ts
+FROM states ORDER BY states.last_updated_ts ASC
+ LIMIT ? OFFSET ?
+INFO:sqlalchemy.engine.Engine:[generated in 0.00006s] (1, 0)
+INFO:sqlalchemy.engine.Engine:COMMIT
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:SELECT statistics_meta.id, statistics_meta.statistic_id, statistics_meta.source, statistics_meta.unit_of_measurement, statistics_meta.has_sum, statistics_meta.name, statistics_meta.mean_type, statistics_meta.unit_class
+FROM statistics_meta
+INFO:sqlalchemy.engine.Engine:[generated in 0.00006s] ()
+INFO:sqlalchemy.engine.Engine:COMMIT
+INFO:pytest_homeassistant_custom_component.plugins:Test recorder successfully started, database location: sqlite://
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:SELECT migration_changes.migration_id, migration_changes.version
+FROM migration_changes
+INFO:sqlalchemy.engine.Engine:[cached since 0.005396s ago] ()
+INFO:sqlalchemy.engine.Engine:COMMIT
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?, ?, ?, ?, ?, ?)
+INFO:sqlalchemy.engine.Engine:[generated in 0.00010s] (2705000516, 1936967080, 616907209, 3478486156, 2001541813, 2514025343)
+INFO:sqlalchemy.engine.Engine:SELECT event_types.event_type_id, event_types.event_type
+FROM event_types
+WHERE event_types.event_type IN (?, ?)
+INFO:sqlalchemy.engine.Engine:[generated in 0.00010s] ('component_loaded', 'service_registered')
+INFO:sqlalchemy.engine.Engine:SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?)
+INFO:sqlalchemy.engine.Engine:[cached since 0.001232s ago] (2514025343,)
+INFO:sqlalchemy.engine.Engine:INSERT INTO event_data (hash, shared_data) VALUES (?, ?) RETURNING data_id
+INFO:sqlalchemy.engine.Engine:[generated in 0.00008s] (2514025343, '{"domain":"recorder","service":"purge"}')
+INFO:sqlalchemy.engine.Engine:INSERT INTO event_types (event_type) VALUES (?) RETURNING event_type_id
+INFO:sqlalchemy.engine.Engine:[generated in 0.00006s] ('service_registered',)
+INFO:sqlalchemy.engine.Engine:INSERT INTO events (event_type, event_data, origin, origin_idx, time_fired, time_fired_ts, context_id, context_user_id, context_parent_id, data_id, context_id_bin, context_user_id_bin, context_parent_id_bin, event_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING event_id
+INFO:sqlalchemy.engine.Engine:[generated in 0.00009s] (None, None, None, 0, None, 1792061833.3638375, None, None, None, 1, <memory at 0x72a9f7b8b940>, None, None, 1)
+INFO:sqlalchemy.engine.Engine:COMMIT
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?)
+INFO:sqlalchemy.engine.Engine:[cached since 0.003665s ago] (2001541813,)
+INFO:sqlalchemy.engine.Engine:INSERT INTO event_data (hash, shared_data) VALUES (?, ?) RETURNING data_id
+INFO:sqlalchemy.engine.Engine:[cached since 0.001982s ago] (2001541813, '{"domain":"recorder","service":"purge_entities"}')
+INFO:sqlalchemy.engine.Engine:INSERT INTO events (event_type, event_data, origin, origin_idx, time_fired, time_fired_ts, context_id, context_user_id, context_parent_id, data_id, context_id_bin, context_user_id_bin, context_parent_id_bin, event_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING event_id
+INFO:sqlalchemy.engine.Engine:[cached since 0.001233s ago] (None, None, None, 0, None, 1792061833.3638573, None, None, None, 2, <memory at 0x72a9f7b8be80>, None, None, 1)
+INFO:sqlalchemy.engine.Engine:COMMIT
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?)
+INFO:sqlalchemy.engine.Engine:[cached since 0.004643s ago] (616907209,)
+INFO:sqlalchemy.engine.Engine:INSERT INTO event_data (hash, shared_data) VALUES (?, ?) RETURNING data_id
+INFO:sqlalchemy.engine.Engine:[cached since 0.002907s ago] (616907209, '{"domain":"recorder","service":"enable"}')
+INFO:sqlalchemy.engine.Engine:INSERT INTO events (event_type, event_data, origin, origin_idx, time_fired, time_fired_ts, context_id, context_user_id, context_parent_id, data_id, context_id_bin, context_user_id_bin, context_parent_id_bin, event_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING event_id
+INFO:sqlalchemy.engine.Engine:[cached since 0.002143s ago] (None, None, None, 0, None, 1792061833.3638635, None, None, None, 3, <memory at 0x72a9f70d01c0>, None, None, 1)
+INFO:sqlalchemy.engine.Engine:COMMIT
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?)
+INFO:sqlalchemy.engine.Engine:[cached since 0.005535s ago] (3478486156,)
+INFO:sqlalchemy.engine.Engine:INSERT INTO event_data (hash, shared_data) VALUES (?, ?) RETURNING data_id
+INFO:sqlalchemy.engine.Engine:[cached since 0.003784s ago] (3478486156, '{"domain":"recorder","service":"disable"}')
+INFO:sqlalchemy.engine.Engine:INSERT INTO events (event_type, event_data, origin, origin_idx, time_fired, time_fired_ts, context_id, context_user_id, context_parent_id, data_id, context_id_bin, context_user_id_bin, context_parent_id_bin, event_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING event_id
+INFO:sqlalchemy.engine.Engine:[cached since 0.003033s ago] (None, None, None, 0, None, 1792061833.363867, None, None, None, 4, <memory at 0x72a9f70d0280>, None, None, 1)
+INFO:sqlalchemy.engine.Engine:COMMIT
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?)
+INFO:sqlalchemy.engine.Engine:[cached since 0.006412s ago] (1936967080,)
+INFO:sqlalchemy.engine.Engine:INSERT INTO event_data (hash, shared_data) VALUES (?, ?) RETURNING data_id
+INFO:sqlalchemy.engine.Engine:[cached since 0.004659s ago] (1936967080, '{"domain":"recorder","service":"get_statistics"}')
+INFO:sqlalchemy.engine.Engine:INSERT INTO events (event_type, event_data, origin, origin_idx, time_fired, time_fired_ts, context_id, context_user_id, context_parent_id, data_id, context_id_bin, context_user_id_bin, context_parent_id_bin, event_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING event_id
+INFO:sqlalchemy.engine.Engine:[cached since 0.003899s ago] (None, None, None, 0, None, 1792061833.3638706, None, None, None, 5, <memory at 0x72a9f70d0580>, None, None, 1)
+INFO:sqlalchemy.engine.Engine:COMMIT
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?)
+INFO:sqlalchemy.engine.Engine:[cached since 0.007323s ago] (2705000516,)
+INFO:sqlalchemy.engine.Engine:INSERT INTO event_data (hash, shared_data) VALUES (?, ?) RETURNING data_id
+INFO:sqlalchemy.engine.Engine:[cached since 0.005563s ago] (2705000516, '{"component":"recorder"}')
+INFO:sqlalchemy.engine.Engine:INSERT INTO event_types (event_type) VALUES (?) RETURNING event_type_id
+INFO:sqlalchemy.engine.Engine:[cached since 0.005358s ago] ('component_loaded',)
+INFO:sqlalchemy.engine.Engine:INSERT INTO events (event_type, event_data, origin, origin_idx, time_fired, time_fired_ts, context_id, context_user_id, context_parent_id, data_id, context_id_bin, context_user_id_bin, context_parent_id_bin, event_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING event_id
+INFO:sqlalchemy.engine.Engine:[cached since 0.00499s ago] (None, None, None, 0, None, 1792061833.3819335, None, None, None, 6, <memory at 0x72a9f70d07c0>, None, None, 2)
+INFO:sqlalchemy.engine.Engine:COMMIT
+------------------------------ Captured log setup ------------------------------
+INFO     homeassistant.loader:loader.py:801 Loaded homeassistant from homeassistant.components.homeassistant
+INFO     homeassistant.loader:loader.py:801 Loaded recorder from homeassistant.components.recorder
+INFO     homeassistant.setup:setup.py:393 Setting up recorder
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("statistics_meta")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("statistics_meta")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:2715 ROLLBACK
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("events")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("events")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("event_data")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("event_data")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("event_types")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("event_types")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("states")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("states")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("state_attributes")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("state_attributes")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("states_meta")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("states_meta")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("statistics")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("statistics")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("statistics_short_term")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("statistics_short_term")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("statistics_meta")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("statistics_meta")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("recorder_runs")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("recorder_runs")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("migration_changes")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("migration_changes")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("schema_changes")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("schema_changes")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.table_info("statistics_runs")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA temp.table_info("statistics_runs")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848
+CREATE TABLE event_data (
+	data_id INTEGER NOT NULL,
+	hash BIGINT,
+	shared_data TEXT,
+	PRIMARY KEY (data_id)
+)
+
+
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00005s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_event_data_hash ON event_data (hash)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848
+CREATE TABLE event_types (
+	event_type_id INTEGER NOT NULL,
+	event_type VARCHAR(64),
+	PRIMARY KEY (event_type_id)
+)
+
+
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00008s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE UNIQUE INDEX ix_event_types_event_type ON event_types (event_type)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848
+CREATE TABLE state_attributes (
+	attributes_id INTEGER NOT NULL,
+	hash BIGINT,
+	shared_attrs TEXT,
+	PRIMARY KEY (attributes_id)
+)
+
+
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00004s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_state_attributes_hash ON state_attributes (hash)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848
+CREATE TABLE states_meta (
+	metadata_id INTEGER NOT NULL,
+	entity_id VARCHAR(255),
+	PRIMARY KEY (metadata_id)
+)
+
+
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE UNIQUE INDEX ix_states_meta_entity_id ON states_meta (entity_id)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848
+CREATE TABLE statistics_meta (
+	id INTEGER NOT NULL,
+	statistic_id VARCHAR(255),
+	source VARCHAR(32),
+	unit_of_measurement VARCHAR(255),
+	unit_class VARCHAR(255),
+	has_mean BOOLEAN,
+	has_sum BOOLEAN,
+	name VARCHAR(255),
+	mean_type SMALLINT NOT NULL,
+	PRIMARY KEY (id)
+)
+
+
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00004s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE UNIQUE INDEX ix_statistics_meta_statistic_id ON statistics_meta (statistic_id)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848
+CREATE TABLE recorder_runs (
+	run_id INTEGER NOT NULL,
+	start DATETIME NOT NULL,
+	"end" DATETIME,
+	closed_incorrect BOOLEAN NOT NULL,
+	created DATETIME NOT NULL,
+	PRIMARY KEY (run_id)
+)
+
+
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00007s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_recorder_runs_start_end ON recorder_runs (start, "end")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848
+CREATE TABLE migration_changes (
+	migration_id VARCHAR(255) NOT NULL,
+	version SMALLINT NOT NULL,
+	PRIMARY KEY (migration_id)
+)
+
+
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848
+CREATE TABLE schema_changes (
+	change_id INTEGER NOT NULL,
+	schema_version INTEGER,
+	changed DATETIME NOT NULL,
+	PRIMARY KEY (change_id)
+)
+
+
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00004s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848
+CREATE TABLE statistics_runs (
+	run_id INTEGER NOT NULL,
+	start DATETIME NOT NULL,
+	PRIMARY KEY (run_id)
+)
+
+
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_statistics_runs_start ON statistics_runs (start)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00002s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848
+CREATE TABLE events (
+	event_id INTEGER NOT NULL,
+	event_type CHAR(0),
+	event_data CHAR(0),
+	origin CHAR(0),
+	origin_idx SMALLINT,
+	time_fired CHAR(0),
+	time_fired_ts FLOAT,
+	context_id CHAR(0),
+	context_user_id CHAR(0),
+	context_parent_id CHAR(0),
+	data_id INTEGER,
+	context_id_bin BLOB,
+	context_user_id_bin BLOB,
+	context_parent_id_bin BLOB,
+	event_type_id INTEGER,
+	PRIMARY KEY (event_id),
+	FOREIGN KEY(data_id) REFERENCES event_data (data_id),
+	FOREIGN KEY(event_type_id) REFERENCES event_types (event_type_id)
+)
+
+
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_events_event_type_id_time_fired_ts ON events (event_type_id, time_fired_ts)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_events_context_id_bin ON events (context_id_bin)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00002s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_events_time_fired_ts ON events (time_fired_ts)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00002s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_events_data_id ON events (data_id)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00002s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848
+CREATE TABLE states (
+	state_id INTEGER NOT NULL,
+	entity_id CHAR(0),
+	state VARCHAR(255),
+	attributes CHAR(0),
+	event_id SMALLINT,
+	last_changed CHAR(0),
+	last_changed_ts FLOAT,
+	last_reported_ts FLOAT,
+	last_updated CHAR(0),
+	last_updated_ts FLOAT,
+	old_state_id INTEGER,
+	attributes_id INTEGER,
+	context_id CHAR(0),
+	context_user_id CHAR(0),
+	context_parent_id CHAR(0),
+	origin_idx SMALLINT,
+	context_id_bin BLOB,
+	context_user_id_bin BLOB,
+	context_parent_id_bin BLOB,
+	metadata_id INTEGER,
+	PRIMARY KEY (state_id),
+	FOREIGN KEY(old_state_id) REFERENCES states (state_id),
+	FOREIGN KEY(attributes_id) REFERENCES state_attributes (attributes_id),
+	FOREIGN KEY(metadata_id) REFERENCES states_meta (metadata_id)
+)
+
+
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00005s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_states_attributes_id ON states (attributes_id)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_states_context_id_bin ON states (context_id_bin)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_states_old_state_id ON states (old_state_id)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00002s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_states_last_updated_ts ON states (last_updated_ts)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00002s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_states_metadata_id_last_updated_ts ON states (metadata_id, last_updated_ts)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00002s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848
+CREATE TABLE statistics (
+	id INTEGER NOT NULL,
+	created CHAR(0),
+	created_ts FLOAT,
+	metadata_id INTEGER,
+	start CHAR(0),
+	start_ts FLOAT,
+	mean FLOAT,
+	mean_weight FLOAT,
+	min FLOAT,
+	max FLOAT,
+	last_reset CHAR(0),
+	last_reset_ts FLOAT,
+	state FLOAT,
+	sum FLOAT,
+	PRIMARY KEY (id),
+	FOREIGN KEY(metadata_id) REFERENCES statistics_meta (id) ON DELETE CASCADE
+)
+
+
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE UNIQUE INDEX ix_statistics_statistic_id_start_ts ON statistics (metadata_id, start_ts)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_statistics_start_ts ON statistics (start_ts)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848
+CREATE TABLE statistics_short_term (
+	id INTEGER NOT NULL,
+	created CHAR(0),
+	created_ts FLOAT,
+	metadata_id INTEGER,
+	start CHAR(0),
+	start_ts FLOAT,
+	mean FLOAT,
+	mean_weight FLOAT,
+	min FLOAT,
+	max FLOAT,
+	last_reset CHAR(0),
+	last_reset_ts FLOAT,
+	state FLOAT,
+	sum FLOAT,
+	PRIMARY KEY (id),
+	FOREIGN KEY(metadata_id) REFERENCES statistics_meta (id) ON DELETE CASCADE
+)
+
+
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE UNIQUE INDEX ix_statistics_short_term_statistic_id_start_ts ON statistics_short_term (metadata_id, start_ts)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00003s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 CREATE INDEX ix_statistics_short_term_start_ts ON statistics_short_term (start_ts)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [no key 0.00002s] ()
+INFO     sqlalchemy.engine.Engine:base.py:2718 COMMIT
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT schema_changes.schema_version AS schema_changes_schema_version
+FROM schema_changes ORDER BY schema_changes.change_id DESC
+ LIMIT ? OFFSET ?
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00009s] (1, 0)
+INFO     sqlalchemy.engine.Engine:base.py:2715 ROLLBACK
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.index_list("events")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.index_info("ix_events_data_id")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.index_info("ix_events_time_fired_ts")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.index_info("ix_events_context_id_bin")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 PRAGMA main.index_info("ix_events_event_type_id_time_fired_ts")
+INFO     sqlalchemy.engine.Engine:base.py:1848 [raw sql] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO schema_changes (schema_version, changed) VALUES (?, ?) RETURNING change_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00010s] (53, '2026-10-15 10:57:13.374714')
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO statistics_runs (start) VALUES (?) RETURNING run_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00007s] ('2026-10-15 10:50:00.000000',)
+INFO     sqlalchemy.engine.Engine:base.py:2718 COMMIT
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT schema_changes.schema_version AS schema_changes_schema_version
+FROM schema_changes ORDER BY schema_changes.change_id DESC
+ LIMIT ? OFFSET ?
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.002655s ago] (1, 0)
+INFO     sqlalchemy.engine.Engine:base.py:2715 ROLLBACK
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT schema_changes.schema_version AS schema_changes_schema_version
+FROM schema_changes ORDER BY schema_changes.change_id ASC
+ LIMIT ? OFFSET ?
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00006s] (1, 0)
+INFO     sqlalchemy.engine.Engine:base.py:2715 ROLLBACK
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT migration_changes.migration_id, migration_changes.version
+FROM migration_changes
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00005s] ()
+INFO     sqlalchemy.engine.Engine:base.py:2718 COMMIT
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT recorder_runs.run_id AS recorder_runs_run_id, recorder_runs.start AS recorder_runs_start, recorder_runs."end" AS recorder_runs_end, recorder_runs.closed_incorrect AS recorder_runs_closed_incorrect, recorder_runs.created AS recorder_runs_created
+FROM recorder_runs
+WHERE recorder_runs."end" IS NULL
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00006s] ()
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO recorder_runs (start, "end", closed_incorrect, created) VALUES (?, ?, ?, ?) RETURNING run_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00008s] ('2026-10-15 10:57:13.363116', None, 0, '2026-10-15 10:57:13.378199')
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT recorder_runs.run_id AS recorder_runs_run_id, recorder_runs.start AS recorder_runs_start, recorder_runs."end" AS recorder_runs_end, recorder_runs.closed_incorrect AS recorder_runs_closed_incorrect, recorder_runs.created AS recorder_runs_created
+FROM recorder_runs ORDER BY recorder_runs.start ASC
+ LIMIT ? OFFSET ?
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00007s] (1, 0)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT states.last_updated_ts
+FROM states ORDER BY states.last_updated_ts ASC
+ LIMIT ? OFFSET ?
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00006s] (1, 0)
+INFO     sqlalchemy.engine.Engine:base.py:2718 COMMIT
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT statistics_meta.id, statistics_meta.statistic_id, statistics_meta.source, statistics_meta.unit_of_measurement, statistics_meta.has_sum, statistics_meta.name, statistics_meta.mean_type, statistics_meta.unit_class
+FROM statistics_meta
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00006s] ()
+INFO     sqlalchemy.engine.Engine:base.py:2718 COMMIT
+INFO     pytest_homeassistant_custom_component.plugins:plugins.py:1770 Test recorder successfully started, database location: sqlite://
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT migration_changes.migration_id, migration_changes.version
+FROM migration_changes
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.005396s ago] ()
+INFO     sqlalchemy.engine.Engine:base.py:2718 COMMIT
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?, ?, ?, ?, ?, ?)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00010s] (2705000516, 1936967080, 616907209, 3478486156, 2001541813, 2514025343)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT event_types.event_type_id, event_types.event_type
+FROM event_types
+WHERE event_types.event_type IN (?, ?)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00010s] ('component_loaded', 'service_registered')
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.001232s ago] (2514025343,)
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO event_data (hash, shared_data) VALUES (?, ?) RETURNING data_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00008s] (2514025343, '{"domain":"recorder","service":"purge"}')
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO event_types (event_type) VALUES (?) RETURNING event_type_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00006s] ('service_registered',)
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO events (event_type, event_data, origin, origin_idx, time_fired, time_fired_ts, context_id, context_user_id, context_parent_id, data_id, context_id_bin, context_user_id_bin, context_parent_id_bin, event_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING event_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00009s] (None, None, None, 0, None, 1792061833.3638375, None, None, None, 1, <memory at 0x72a9f7b8b940>, None, None, 1)
+INFO     sqlalchemy.engine.Engine:base.py:2718 COMMIT
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.003665s ago] (2001541813,)
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO event_data (hash, shared_data) VALUES (?, ?) RETURNING data_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.001982s ago] (2001541813, '{"domain":"recorder","service":"purge_entities"}')
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO events (event_type, event_data, origin, origin_idx, time_fired, time_fired_ts, context_id, context_user_id, context_parent_id, data_id, context_id_bin, context_user_id_bin, context_parent_id_bin, event_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING event_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.001233s ago] (None, None, None, 0, None, 1792061833.3638573, None, None, None, 2, <memory at 0x72a9f7b8be80>, None, None, 1)
+INFO     sqlalchemy.engine.Engine:base.py:2718 COMMIT
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.004643s ago] (616907209,)
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO event_data (hash, shared_data) VALUES (?, ?) RETURNING data_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.002907s ago] (616907209, '{"domain":"recorder","service":"enable"}')
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO events (event_type, event_data, origin, origin_idx, time_fired, time_fired_ts, context_id, context_user_id, context_parent_id, data_id, context_id_bin, context_user_id_bin, context_parent_id_bin, event_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING event_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.002143s ago] (None, None, None, 0, None, 1792061833.3638635, None, None, None, 3, <memory at 0x72a9f70d01c0>, None, None, 1)
+INFO     sqlalchemy.engine.Engine:base.py:2718 COMMIT
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.005535s ago] (3478486156,)
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO event_data (hash, shared_data) VALUES (?, ?) RETURNING data_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.003784s ago] (3478486156, '{"domain":"recorder","service":"disable"}')
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO events (event_type, event_data, origin, origin_idx, time_fired, time_fired_ts, context_id, context_user_id, context_parent_id, data_id, context_id_bin, context_user_id_bin, context_parent_id_bin, event_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING event_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.003033s ago] (None, None, None, 0, None, 1792061833.363867, None, None, None, 4, <memory at 0x72a9f70d0280>, None, None, 1)
+INFO     sqlalchemy.engine.Engine:base.py:2718 COMMIT
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.006412s ago] (1936967080,)
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO event_data (hash, shared_data) VALUES (?, ?) RETURNING data_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.004659s ago] (1936967080, '{"domain":"recorder","service":"get_statistics"}')
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO events (event_type, event_data, origin, origin_idx, time_fired, time_fired_ts, context_id, context_user_id, context_parent_id, data_id, context_id_bin, context_user_id_bin, context_parent_id_bin, event_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING event_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.003899s ago] (None, None, None, 0, None, 1792061833.3638706, None, None, None, 5, <memory at 0x72a9f70d0580>, None, None, 1)
+INFO     sqlalchemy.engine.Engine:base.py:2718 COMMIT
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 SELECT event_data.data_id, event_data.shared_data
+FROM event_data
+WHERE event_data.hash IN (?)
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.007323s ago] (2705000516,)
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO event_data (hash, shared_data) VALUES (?, ?) RETURNING data_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.005563s ago] (2705000516, '{"component":"recorder"}')
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO event_types (event_type) VALUES (?) RETURNING event_type_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.005358s ago] ('component_loaded',)
+INFO     sqlalchemy.engine.Engine:base.py:1848 INSERT INTO events (event_type, event_data, origin, origin_idx, time_fired, time_fired_ts, context_id, context_user_id, context_parent_id, data_id, context_id_bin, context_user_id_bin, context_parent_id_bin, event_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING event_id
+INFO     sqlalchemy.engine.Engine:base.py:1848 [cached since 0.00499s ago] (None, None, None, 0, None, 1792061833.3819335, None, None, None, 6, <memory at 0x72a9f70d07c0>, None, None, 2)
+INFO     sqlalchemy.engine.Engine:base.py:2718 COMMIT
+--------------------------- Captured stderr teardown ---------------------------
+INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+INFO:sqlalchemy.engine.Engine:UPDATE recorder_runs SET "end"=? WHERE recorder_runs.run_id = ?
+INFO:sqlalchemy.engine.Engine:[generated in 0.00008s] ('2026-10-15 10:57:13.394443', 1)
+INFO:sqlalchemy.engine.Engine:COMMIT
+INFO:homeassistant.components.recorder.pool.MutexPool:Pool recreating
+---------------------------- Captured log teardown -----------------------------
+INFO     sqlalchemy.engine.Engine:base.py:2712 BEGIN (implicit)
+INFO     sqlalchemy.engine.Engine:base.py:1848 UPDATE recorder_runs SET "end"=? WHERE recorder_runs.run_id = ?
+INFO     sqlalchemy.engine.Engine:base.py:1848 [generated in 0.00008s] ('2026-10-15 10:57:13.394443', 1)
+INFO     sqlalchemy.engine.Engine:base.py:2718 COMMIT
+INFO     homeassistant.components.recorder.pool.MutexPool:impl.py:486 Pool recreating
+=========================== short test summary info ============================
+FAILED tests/ha/test_reader.py::test_reader_parses_only_selected_published_tariff
+FAILED tests/ha/test_reader.py::test_source_freshness_exclusive_and_future[599-True]
+FAILED tests/ha/test_reader.py::test_source_freshness_exclusive_and_future[600-False]
+FAILED tests/ha/test_reader.py::test_source_freshness_exclusive_and_future[-1-False]
+FAILED tests/ha/test_reader.py::test_join_has_no_missing_stream_zero_fallback
+FAILED tests/ha/test_reader.py::test_recorder_query_real_populated_sqlite - M...
+6 failed in 0.18s

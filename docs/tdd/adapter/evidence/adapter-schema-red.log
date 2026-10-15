@@ -1,0 +1,12 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_native_integration_declares_config_entry_only_schema ___________
+
+    def test_native_integration_declares_config_entry_only_schema():
+>       from custom_components.ecoflow_smart_charge import CONFIG_SCHEMA
+E       ImportError: cannot import name 'CONFIG_SCHEMA' from 'custom_components.ecoflow_smart_charge' ($REPO/custom_components/ecoflow_smart_charge/__init__.py)
+
+tests/ha/test_native.py:9: ImportError
+=========================== short test summary info ============================
+FAILED tests/ha/test_native.py::test_native_integration_declares_config_entry_only_schema
+1 failed in 0.10s

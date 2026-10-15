@@ -1,15 +1,14 @@
-"""Non-writing recompute button."""
+"""Recalculation uses the same runtime gatekeeper as timers and services."""
+
 from homeassistant.components.button import ButtonEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+from .entity import RuntimeEntity
 
 
-class RecalculateButton(ButtonEntity):
-    _attr_has_entity_name = True
-    _attr_name = "Recalculate shadow plan"
-    def __init__(self, entry): self._entry = entry; self._attr_unique_id = f"{entry.entry_id}_recalculate"
+class RecalculateButton(RuntimeEntity, ButtonEntity):
     async def async_press(self):
-        await self._entry.runtime_data.async_recalculate()
+        await self.runtime.async_recalculate()
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback): async_add_entities([RecalculateButton(entry)])
+
+async def async_setup_entry(hass, entry, async_add_entities):
+    async_add_entities([RecalculateButton(entry, "recalculate", "Recalculate")])

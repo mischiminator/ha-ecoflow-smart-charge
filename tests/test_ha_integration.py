@@ -1,4 +1,5 @@
 """Real Home Assistant lifecycle/config-flow regression coverage."""
+
 from __future__ import annotations
 
 import pytest

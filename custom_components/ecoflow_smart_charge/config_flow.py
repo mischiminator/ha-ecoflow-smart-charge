@@ -1,25 +1,134 @@
-"""Config and options flows with user-selected, validation-ready entities."""
+"""Validated native source selectors and bounded options; no activation via config."""
+
 from __future__ import annotations
+
+import math
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.const import CONF_NAME
+from homeassistant.core import callback
 from homeassistant.helpers import selector
 
-from .const import DEFAULT_CHARGE_CEILING_CT, DEFAULT_MINIMUM_PRICE_ADVANTAGE, DOMAIN
+from .const import DOMAIN
 
-CONF_GRID_ENERGY = "grid_energy_entity"
-CONF_PRICE = "price_entity"
-CONF_PRICE_WINDOW = "price_window_entity"
-CONF_PV = "pv_entity"
-CONF_SOC = "soc_entities"
-CONF_RESERVES = "reserve_entities"
-CONF_SELF_POWERED = "self_powered_entities"
-CONF_OPERATING_MODE = "operating_mode_entities"
+SINGLES = {
+    "grid_energy_entity": "sensor",
+    "pv_entity": "sensor",
+    "price_entity": "sensor",
+    "price_window_entity": "binary_sensor",
+    "forecast_today_entity": "sensor",
+    "forecast_remaining_entity": "sensor",
+    "forecast_tomorrow_entity": "sensor",
+    "sun_entity": "sun",
+}
+TRIPLES = {
+    "soc_entities": "sensor",
+    "reserve_entities": "number",
+    "self_powered_entities": "switch",
+    "operating_mode_entities": "select",
+    "charge_energy_entities": "sensor",
+    "discharge_energy_entities": "sensor",
+}
+SETTINGS = {
+    "minimum_price_advantage_percent": (20.0, 0, 100),
+    "charge_ceiling_ct": (32.0, -100, 1000),
+    "efficiency": (0.85, 0.01, 1),
+    "wear_cost_ct": (2.0, 0, 100),
+    "minimum_net_saving_ct": (3.0, 0, 1000),
+    "capacity_kwh": (2.0, 0.01, 100),
+}
 
 
-def _entity_selector(domains: list[str], multiple: bool = False) -> selector.EntitySelector:
-    return selector.EntitySelector(selector.EntitySelectorConfig(domain=domains, multiple=multiple))
+def validate_settings(values):
+    for key, (_, lo, hi) in SETTINGS.items():
+        if key in values:
+            value = values[key]
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (float, int))
+                or not math.isfinite(value)
+                or not lo <= value <= hi
+            ):
+                raise ValueError("invalid_setting")
+    if "master" in values and not isinstance(values["master"], bool):
+        raise ValueError("invalid_master")
+    if values.get("mode", "shadow") != "shadow":
+        raise ValueError("unsafe_mode")
+    if set(values) - set(SETTINGS) - {"master", "mode"}:
+        raise ValueError("unknown_setting")
+    return dict(values)
+
+
+def validate_mapping(hass, data):
+    if any(len(data.get(key, [])) != 3 for key in TRIPLES):
+        return "three_batteries_required"
+    if any(len(set(data[key])) != 3 for key in TRIPLES):
+        return "duplicate_reserves"
+    try:
+        selected = [(data[k], domain) for k, domain in SINGLES.items()]
+        selected += [(e, domain) for k, domain in TRIPLES.items() for e in data[k]]
+        legacy = data["legacy_writer_entities"]
+        if not legacy or len(set(legacy)) != len(legacy) or not data["tariff_key"].strip():
+            return "source_invalid"
+        selected += [(e, "automation") for e in legacy]
+        energy = [
+            data["grid_energy_entity"],
+            data["pv_entity"],
+            *data["charge_energy_entities"],
+            *data["discharge_energy_entities"],
+        ]
+        if len(set(energy)) != 8:
+            return "source_invalid"
+        for entity, domain in selected:
+            state = hass.states.get(entity)
+            if (
+                entity.split(".")[0] != domain
+                or state is None
+                or state.state in ("unknown", "unavailable")
+            ):
+                return "source_invalid"
+        for entity in energy + [
+            data[k]
+            for k in (
+                "forecast_today_entity",
+                "forecast_remaining_entity",
+                "forecast_tomorrow_entity",
+            )
+        ]:
+            if hass.states.get(entity).attributes.get("unit_of_measurement") not in ("Wh", "kWh"):
+                return "unit_invalid"
+        for entity in data["soc_entities"] + data["reserve_entities"]:
+            state = hass.states.get(entity)
+            if (
+                state.attributes.get("unit_of_measurement") != "%"
+                or not 0 <= float(state.state) <= 100
+            ):
+                return "unit_invalid"
+        if hass.states.get(data["price_entity"]).attributes.get("unit_of_measurement") not in (
+            "EUR/kWh",
+            "ct/kWh",
+        ):
+            return "unit_invalid"
+    except KeyError, TypeError, ValueError, AttributeError:
+        return "source_invalid"
+    return None
+
+
+def mapping_schema():
+    schema = {vol.Required("name", default="EcoFlow Smart Charge"): str}
+    for key, domain in SINGLES.items():
+        schema[vol.Required(key)] = selector.EntitySelector(
+            selector.EntitySelectorConfig(domain=[domain])
+        )
+    for key, domain in TRIPLES.items():
+        schema[vol.Required(key)] = selector.EntitySelector(
+            selector.EntitySelectorConfig(domain=[domain], multiple=True)
+        )
+    schema[vol.Required("tariff_key")] = str
+    schema[vol.Required("legacy_writer_entities")] = selector.EntitySelector(
+        selector.EntitySelectorConfig(domain=["automation"], multiple=True)
+    )
+    return vol.Schema(schema)
 
 
 class EcoFlowSmartChargeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -28,43 +137,79 @@ class EcoFlowSmartChargeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input=None):
         errors = {}
         if user_input is not None:
-            triples = (CONF_SOC, CONF_RESERVES, CONF_SELF_POWERED, CONF_OPERATING_MODE)
-            if any(len(user_input.get(key, [])) != 3 for key in triples):
-                errors["base"] = "three_batteries_required"
-            elif len(set(user_input[CONF_RESERVES])) != 3:
-                errors["base"] = "duplicate_reserves"
+            error = validate_mapping(self.hass, user_input)
+            if error:
+                errors["base"] = error
             else:
-                await self.async_set_unique_id(f"{DOMAIN}:{user_input[CONF_GRID_ENERGY]}")
-                self._abort_if_unique_id_configured()
-                return self.async_create_entry(title=user_input[CONF_NAME], data=user_input)
-        schema = vol.Schema({
-            vol.Required(CONF_NAME, default="EcoFlow Smart Charge"): str,
-            vol.Required(CONF_GRID_ENERGY): _entity_selector(["sensor"]),
-            vol.Required(CONF_PRICE): _entity_selector(["sensor"]),
-            vol.Required(CONF_PRICE_WINDOW): _entity_selector(["binary_sensor"]),
-            vol.Required(CONF_PV): _entity_selector(["sensor"]),
-            vol.Required(CONF_SOC): _entity_selector(["sensor"], True),
-            vol.Required(CONF_RESERVES): _entity_selector(["number"], True),
-            vol.Required(CONF_SELF_POWERED): _entity_selector(["switch"], True),
-            vol.Required(CONF_OPERATING_MODE): _entity_selector(["select"], True),
-        })
-        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+                # Physical reserve targets, not private source IDs, determine duplicate ownership.
+                chosen = set(user_input["reserve_entities"])
+                if any(
+                    chosen.intersection(e.data.get("reserve_entities", []))
+                    for e in self._async_current_entries()
+                ):
+                    return self.async_abort(reason="already_configured")
+                return self.async_create_entry(title=user_input["name"], data=user_input)
+        return self.async_show_form(step_id="user", data_schema=mapping_schema(), errors=errors)
+
+    async def async_step_reconfigure(self, user_input=None):
+        entry = self._get_reconfigure_entry()
+        journal = getattr(getattr(entry, "runtime_data", None), "journal", None)
+        if journal is None:
+            from homeassistant.helpers.storage import Store
+
+            from .const import STORE_VERSION
+            from .storage import PersistentSessionStore
+
+            journal = PersistentSessionStore(
+                Store(self.hass, STORE_VERSION, f"{DOMAIN}.{entry.entry_id}"),
+                expected_exists=entry.data.get("journal_initialized", False),
+            )
+            await journal.async_load()
+        if journal.blocked or journal.record:
+            return self.async_abort(reason="recovery_pending")
+        errors = {}
+        if user_input is not None:
+            error = validate_mapping(self.hass, user_input)
+            if error:
+                errors["base"] = error
+            else:
+                chosen = set(user_input["reserve_entities"])
+                if any(
+                    e.entry_id != entry.entry_id
+                    and chosen.intersection(e.data.get("reserve_entities", []))
+                    for e in self._async_current_entries()
+                ):
+                    return self.async_abort(reason="already_configured")
+                return self.async_update_reload_and_abort(entry, data_updates=user_input)
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(mapping_schema(), entry.data),
+            errors=errors,
+        )
 
     @staticmethod
-    @config_entries.callback
+    @callback
     def async_get_options_flow(config_entry):
         return EcoFlowSmartChargeOptionsFlow()
 
 
 class EcoFlowSmartChargeOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
+        errors = {}
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
-        schema = vol.Schema({
-            vol.Required("mode", default=self.config_entry.options.get("mode", "shadow")): selector.SelectSelector(
-                selector.SelectSelectorConfig(options=["shadow", "armed", "active"])
-            ),
-            vol.Required("minimum_price_advantage_percent", default=self.config_entry.options.get("minimum_price_advantage_percent", DEFAULT_MINIMUM_PRICE_ADVANTAGE)): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
-            vol.Required("charge_ceiling_ct", default=self.config_entry.options.get("charge_ceiling_ct", DEFAULT_CHARGE_CEILING_CT)): vol.Coerce(float),
-        })
-        return self.async_show_form(step_id="init", data_schema=schema)
+            try:
+                validate_settings(user_input)
+                return self.async_create_entry(
+                    title="", data={**self.config_entry.options, **user_input}
+                )
+            except ValueError as err:
+                errors["base"] = str(err)
+        schema = {
+            vol.Optional("master", default=self.config_entry.options.get("master", False)): bool,
+            vol.Optional("mode", default="shadow"): vol.In(["shadow"]),
+        }
+        for key, (default, lo, hi) in SETTINGS.items():
+            schema[vol.Optional(key, default=self.config_entry.options.get(key, default))] = (
+                vol.All(vol.Coerce(float), vol.Range(min=lo, max=hi))
+            )
+        return self.async_show_form(step_id="init", data_schema=vol.Schema(schema), errors=errors)

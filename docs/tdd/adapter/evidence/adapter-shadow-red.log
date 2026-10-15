@@ -1,0 +1,21 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______________ test_pending_shadow_restore_never_calls_hardware _______________
+
+    @pytest.mark.asyncio
+    async def test_pending_shadow_restore_never_calls_hardware():
+        journal = PersistentSessionStore(MemoryStore())
+        await journal.async_capture_before_command('prior', {'number.test': 17}, {'number.test': 100})
+        calls = []
+        runtime = Runtime('shadow', journal, lambda _: 100, lambda *args: calls.append(args))
+        assert not await runtime.async_restore()
+>       assert calls == []
+E       AssertionError: assert [('number.test', 17.0)] == []
+E
+E         Left contains one more item: ('number.test', 17.0)
+E         Use -v to get more diff
+
+tests/ha/test_shadow_recovery.py:18: AssertionError
+=========================== short test summary info ============================
+FAILED tests/ha/test_shadow_recovery.py::test_pending_shadow_restore_never_calls_hardware
+1 failed in 0.11s

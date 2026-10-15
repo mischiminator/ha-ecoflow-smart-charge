@@ -1,23 +1,33 @@
-"""Safety setting number entity."""
+"""Bounded settings only; never physical reserve controls."""
+
 from homeassistant.components.number import NumberEntity, NumberMode
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+from .config_flow import SETTINGS
+from .entity import RuntimeEntity
 
 
-class AdvantageNumber(NumberEntity):
-    _attr_has_entity_name = True
-    _attr_name = "Minimum price advantage"
-    _attr_native_min_value = 0
-    _attr_native_max_value = 100
-    _attr_native_step = 1
+class SettingNumber(RuntimeEntity, NumberEntity):
     _attr_mode = NumberMode.BOX
-    _attr_native_unit_of_measurement = "%"
-    def __init__(self, entry): self._entry = entry; self._attr_unique_id = f"{entry.entry_id}_minimum_price_advantage"
-    @property
-    def native_value(self): return self._entry.options.get("minimum_price_advantage_percent", 20)
-    async def async_set_native_value(self, value):
-        self._entry.async_update(options={**self._entry.options, "minimum_price_advantage_percent": value})
-        self.async_write_ha_state()
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback): async_add_entities([AdvantageNumber(entry)])
+    def __init__(self, entry, key):
+        super().__init__(
+            entry,
+            "minimum_price_advantage" if key == "minimum_price_advantage_percent" else key,
+            key.replace("_", " ").capitalize(),
+        )
+        self.setting = key
+        self.default, self._attr_native_min_value, self._attr_native_max_value = SETTINGS[key]
+        self._attr_native_step = 0.01 if key in ("efficiency", "capacity_kwh") else 0.1
+        if key == "minimum_price_advantage_percent":
+            self._attr_native_unit_of_measurement = "%"
+
+    @property
+    def native_value(self):
+        return self.entry.options.get(self.setting, self.default)
+
+    async def async_set_native_value(self, value):
+        await self.runtime.async_set_setting(self.setting, value)
+
+
+async def async_setup_entry(hass, entry, async_add_entities):
+    async_add_entities([SettingNumber(entry, key) for key in SETTINGS])

@@ -1,0 +1,149 @@
+.F...F...                                                                [100%]
+=================================== FAILURES ===================================
+______________ test_import_schema_version_is_exact_integer[True] _______________
+
+bad = True
+
+    @pytest.mark.parametrize('bad',[True,2,None,'1'])
+    async def test_import_schema_version_is_exact_integer(bad):
+        from custom_components.ecoflow_smart_charge.migration import validate_import
+        data=payload(); data['schema_version']=bad
+>       with pytest.raises(ValueError): validate_import(data,())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/ha/test_import_restart.py:39: Failed
+_ test_restart_pending_shadow_does_not_write_and_failed_unload_keeps_services __
+
+hass = <HomeAssistant RUNNING>
+hass_storage = {'ecoflow_smart_charge.01M4ZKZ0ZH00CJ06N38V99ESJ9': {'data': {'full_marker_day': None, 'learning': {'correction': 1.0,...:09.604722+00:00'}, ...}}, 'key': 'ecoflow_smart_charge.01M4ZKZ0ZH00CJ06N38V99ESJ9', 'minor_version': 1, 'version': 1}}
+
+    @pytest.mark.usefixtures('enable_custom_integrations')
+    async def test_restart_pending_shadow_does_not_write_and_failed_unload_keeps_services(hass,hass_storage):
+        from custom_components.ecoflow_smart_charge.storage import SessionRecord
+        from dataclasses import asdict
+        entry=MockConfigEntry(domain=DOMAIN,data={'reserve_entities':[f'number.reserve_{i}' for i in range(3)],
+            'legacy_writer_entities':['automation.legacy'],'journal_initialized':True},options={'mode':'active'})
+        originals={e:13.+i for i,e in enumerate(entry.data['reserve_entities'])}
+        record=SessionRecord('prior',datetime.now(UTC).isoformat(),originals,{e:100. for e in originals})
+        state={'schema_version':1,'session':asdict(record),'learning':{},'full_marker_day':None}
+        hass_storage[f'{DOMAIN}.{entry.entry_id}']={'version':1,'minor_version':1,'key':f'{DOMAIN}.{entry.entry_id}','data':state}
+        hass.states.async_set('automation.legacy','off')
+        for e in originals: hass.states.async_set(e,'100',{'unit_of_measurement':'%'})
+        calls=[]
+        async def write(call): calls.append(call.data)
+        hass.services.async_register('number','set_value',write)
+        entry.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        runtime=entry.runtime_data
+        assert runtime.mode=='shadow' and runtime.journal.record
+        await hass.services.async_call(DOMAIN,'recalculate',{'config_entry_id':entry.entry_id},blocking=True)
+        assert calls==[]
+        assert not await hass.config_entries.async_unload(entry.entry_id)
+        assert calls==[] and runtime.journal.record
+        await hass.services.async_call(DOMAIN,'confirm_recovery',{'config_entry_id':entry.entry_id,'confirmed':True},blocking=True)
+>       assert len(calls)==3 and runtime.mode=='shadow'
+E       assert (0 == 3)
+E        +  where 0 = len([])
+
+tests/ha/test_import_restart.py:65: AssertionError
+----------------------------- Captured stderr call -----------------------------
+INFO:homeassistant.loader:Loaded ecoflow_smart_charge from custom_components.ecoflow_smart_charge
+WARNING:homeassistant.loader:We found a custom integration ecoflow_smart_charge which has not been tested by Home Assistant. This component might cause stability problems, be sure to disable it if you experience issues with Home Assistant
+INFO:homeassistant.setup:Setting up ecoflow_smart_charge
+INFO:homeassistant.loader:Loaded sensor from homeassistant.components.sensor
+INFO:homeassistant.setup:Setting up sensor
+INFO:homeassistant.components.sensor:Setting up ecoflow_smart_charge.sensor
+INFO:homeassistant.helpers.entity_registry:Registered new sensor.ecoflow_smart_charge entity: sensor.controller_status
+INFO:homeassistant.helpers.entity_registry:Registered new sensor.ecoflow_smart_charge entity: sensor.decision_reason
+INFO:homeassistant.helpers.entity_registry:Registered new sensor.ecoflow_smart_charge entity: sensor.missing_energy
+INFO:homeassistant.helpers.entity_registry:Registered new sensor.ecoflow_smart_charge entity: sensor.solar_surplus
+INFO:homeassistant.helpers.entity_registry:Registered new sensor.ecoflow_smart_charge entity: sensor.avoided_price
+INFO:homeassistant.helpers.entity_registry:Registered new sensor.ecoflow_smart_charge entity: sensor.net_saving
+INFO:homeassistant.helpers.entity_registry:Registered new sensor.ecoflow_smart_charge entity: sensor.price_advantage
+INFO:homeassistant.helpers.entity_registry:Registered new sensor.ecoflow_smart_charge entity: sensor.pv_correction
+INFO:homeassistant.helpers.entity_registry:Registered new sensor.ecoflow_smart_charge entity: sensor.full_marker_day
+INFO:homeassistant.loader:Loaded binary_sensor from homeassistant.components.binary_sensor
+INFO:homeassistant.setup:Setting up binary_sensor
+INFO:homeassistant.components.binary_sensor:Setting up ecoflow_smart_charge.binary_sensor
+INFO:homeassistant.helpers.entity_registry:Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.shadow_active
+INFO:homeassistant.helpers.entity_registry:Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.recovery_pending
+INFO:homeassistant.helpers.entity_registry:Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.sources_valid
+INFO:homeassistant.helpers.entity_registry:Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.writer_locked
+INFO:homeassistant.helpers.entity_registry:Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.charge_permission
+INFO:homeassistant.loader:Loaded number from homeassistant.components.number
+INFO:homeassistant.setup:Setting up number
+INFO:homeassistant.components.number:Setting up ecoflow_smart_charge.number
+INFO:homeassistant.helpers.entity_registry:Registered new number.ecoflow_smart_charge entity: number.minimum_price_advantage_percent
+INFO:homeassistant.helpers.entity_registry:Registered new number.ecoflow_smart_charge entity: number.charge_ceiling_ct
+INFO:homeassistant.helpers.entity_registry:Registered new number.ecoflow_smart_charge entity: number.efficiency
+INFO:homeassistant.helpers.entity_registry:Registered new number.ecoflow_smart_charge entity: number.wear_cost_ct
+INFO:homeassistant.helpers.entity_registry:Registered new number.ecoflow_smart_charge entity: number.minimum_net_saving_ct
+INFO:homeassistant.helpers.entity_registry:Registered new number.ecoflow_smart_charge entity: number.capacity_kwh
+INFO:homeassistant.loader:Loaded select from homeassistant.components.select
+INFO:homeassistant.setup:Setting up select
+INFO:homeassistant.components.select:Setting up ecoflow_smart_charge.select
+INFO:homeassistant.helpers.entity_registry:Registered new select.ecoflow_smart_charge entity: select.controller_mode
+INFO:homeassistant.loader:Loaded switch from homeassistant.components.switch
+INFO:homeassistant.loader:Loaded button from homeassistant.components.button
+INFO:homeassistant.setup:Setting up switch
+INFO:homeassistant.components.switch:Setting up ecoflow_smart_charge.switch
+INFO:homeassistant.helpers.entity_registry:Registered new switch.ecoflow_smart_charge entity: switch.master_permission
+INFO:homeassistant.setup:Setting up button
+INFO:homeassistant.components.button:Setting up ecoflow_smart_charge.button
+INFO:homeassistant.helpers.entity_registry:Registered new button.ecoflow_smart_charge entity: button.recalculate
+WARNING:homeassistant.helpers.service:Referenced entities number.reserve_0 are missing or not currently available
+WARNING:homeassistant.helpers.service:Referenced entities number.reserve_1 are missing or not currently available
+WARNING:homeassistant.helpers.service:Referenced entities number.reserve_2 are missing or not currently available
+------------------------------ Captured log call -------------------------------
+INFO     homeassistant.loader:loader.py:801 Loaded ecoflow_smart_charge from custom_components.ecoflow_smart_charge
+WARNING  homeassistant.loader:loader.py:716 We found a custom integration ecoflow_smart_charge which has not been tested by Home Assistant. This component might cause stability problems, be sure to disable it if you experience issues with Home Assistant
+INFO     homeassistant.setup:setup.py:393 Setting up ecoflow_smart_charge
+INFO     homeassistant.loader:loader.py:801 Loaded sensor from homeassistant.components.sensor
+INFO     homeassistant.setup:setup.py:393 Setting up sensor
+INFO     homeassistant.components.sensor:entity_platform.py:484 Setting up ecoflow_smart_charge.sensor
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new sensor.ecoflow_smart_charge entity: sensor.controller_status
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new sensor.ecoflow_smart_charge entity: sensor.decision_reason
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new sensor.ecoflow_smart_charge entity: sensor.missing_energy
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new sensor.ecoflow_smart_charge entity: sensor.solar_surplus
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new sensor.ecoflow_smart_charge entity: sensor.avoided_price
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new sensor.ecoflow_smart_charge entity: sensor.net_saving
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new sensor.ecoflow_smart_charge entity: sensor.price_advantage
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new sensor.ecoflow_smart_charge entity: sensor.pv_correction
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new sensor.ecoflow_smart_charge entity: sensor.full_marker_day
+INFO     homeassistant.loader:loader.py:801 Loaded binary_sensor from homeassistant.components.binary_sensor
+INFO     homeassistant.setup:setup.py:393 Setting up binary_sensor
+INFO     homeassistant.components.binary_sensor:entity_platform.py:484 Setting up ecoflow_smart_charge.binary_sensor
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.shadow_active
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.recovery_pending
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.sources_valid
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.writer_locked
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new binary_sensor.ecoflow_smart_charge entity: binary_sensor.charge_permission
+INFO     homeassistant.loader:loader.py:801 Loaded number from homeassistant.components.number
+INFO     homeassistant.setup:setup.py:393 Setting up number
+INFO     homeassistant.components.number:entity_platform.py:484 Setting up ecoflow_smart_charge.number
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new number.ecoflow_smart_charge entity: number.minimum_price_advantage_percent
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new number.ecoflow_smart_charge entity: number.charge_ceiling_ct
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new number.ecoflow_smart_charge entity: number.efficiency
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new number.ecoflow_smart_charge entity: number.wear_cost_ct
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new number.ecoflow_smart_charge entity: number.minimum_net_saving_ct
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new number.ecoflow_smart_charge entity: number.capacity_kwh
+INFO     homeassistant.loader:loader.py:801 Loaded select from homeassistant.components.select
+INFO     homeassistant.setup:setup.py:393 Setting up select
+INFO     homeassistant.components.select:entity_platform.py:484 Setting up ecoflow_smart_charge.select
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new select.ecoflow_smart_charge entity: select.controller_mode
+INFO     homeassistant.loader:loader.py:801 Loaded switch from homeassistant.components.switch
+INFO     homeassistant.loader:loader.py:801 Loaded button from homeassistant.components.button
+INFO     homeassistant.setup:setup.py:393 Setting up switch
+INFO     homeassistant.components.switch:entity_platform.py:484 Setting up ecoflow_smart_charge.switch
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new switch.ecoflow_smart_charge entity: switch.master_permission
+INFO     homeassistant.setup:setup.py:393 Setting up button
+INFO     homeassistant.components.button:entity_platform.py:484 Setting up ecoflow_smart_charge.button
+INFO     homeassistant.helpers.entity_registry:entity_registry.py:1715 Registered new button.ecoflow_smart_charge entity: button.recalculate
+WARNING  homeassistant.helpers.service:target.py:155 Referenced entities number.reserve_0 are missing or not currently available
+WARNING  homeassistant.helpers.service:target.py:155 Referenced entities number.reserve_1 are missing or not currently available
+WARNING  homeassistant.helpers.service:target.py:155 Referenced entities number.reserve_2 are missing or not currently available
+=========================== short test summary info ============================
+FAILED tests/ha/test_import_restart.py::test_import_schema_version_is_exact_integer[True]
+FAILED tests/ha/test_import_restart.py::test_restart_pending_shadow_does_not_write_and_failed_unload_keeps_services
+2 failed, 7 passed in 0.23s

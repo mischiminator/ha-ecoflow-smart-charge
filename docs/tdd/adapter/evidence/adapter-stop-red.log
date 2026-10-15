@@ -1,0 +1,46 @@
+.....FF                                                                  [100%]
+=================================== FAILURES ===================================
+_ test_stop_persistence_failure_still_revokes_active_authorization[async_close] _
+
+operation = 'async_close'
+
+    @pytest.mark.parametrize('operation', ['async_close', 'async_set_shadow'])
+    async def test_stop_persistence_failure_still_revokes_active_authorization(operation):
+        r, disk, values, stamps, calls, gate = await setup()
+        await r.async_start(values)
+        async def failed_save(_data):
+            raise OSError('disk unavailable')
+        disk.async_save = failed_save
+        with pytest.raises(OSError):
+            await getattr(r, operation)()
+>       assert r.mode == 'shadow'
+E       AssertionError: assert 'active' == 'shadow'
+E
+E         - shadow
+E         + active
+
+tests/ha/test_crash_boundaries.py:84: AssertionError
+_ test_stop_persistence_failure_still_revokes_active_authorization[async_set_shadow] _
+
+operation = 'async_set_shadow'
+
+    @pytest.mark.parametrize('operation', ['async_close', 'async_set_shadow'])
+    async def test_stop_persistence_failure_still_revokes_active_authorization(operation):
+        r, disk, values, stamps, calls, gate = await setup()
+        await r.async_start(values)
+        async def failed_save(_data):
+            raise OSError('disk unavailable')
+        disk.async_save = failed_save
+        with pytest.raises(OSError):
+            await getattr(r, operation)()
+>       assert r.mode == 'shadow'
+E       AssertionError: assert 'active' == 'shadow'
+E
+E         - shadow
+E         + active
+
+tests/ha/test_crash_boundaries.py:84: AssertionError
+=========================== short test summary info ============================
+FAILED tests/ha/test_crash_boundaries.py::test_stop_persistence_failure_still_revokes_active_authorization[async_close]
+FAILED tests/ha/test_crash_boundaries.py::test_stop_persistence_failure_still_revokes_active_authorization[async_set_shadow]
+2 failed, 5 passed in 0.13s
