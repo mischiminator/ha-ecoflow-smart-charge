@@ -107,6 +107,10 @@
         "confirmed": {
           "name": "Ausdrücklich bestätigen",
           "description": "Nur nach vollständiger Sicherheitsprüfung bewusst auf wahr setzen; kein Standard-Opt-in."
+        },
+        "commissioning_confirmed": {
+          "name": "Externe Inbetriebnahme bestätigt",
+          "description": "Nur nach separat freigegebener und dokumentierter unabhängiger Altlogik-, Zähler- und Geräteprüfung bestätigen. Keine automatische Paritätsprüfung; kopierte native Werte genügen nicht."
         }
       }
     },
@@ -126,7 +130,7 @@
     },
     "record_shadow_comparison": {
       "name": "Shadow-Vergleich protokollieren",
-      "description": "Nur exakt passende gültige Shadow-Ausgabe mit Vergleichswerten protokollieren; keine Gerätebefehle.",
+      "description": "Vergleicht operatorseitige Werte nur mit der nativen Ausgabe. Prüft nicht Herkunft oder Altlogik-Parität; unabhängige Inbetriebnahme bleibt ein externes Freigabegate. Keine Gerätebefehle.",
       "fields": {
         "config_entry_id": {
           "name": "Integrationseintrag",

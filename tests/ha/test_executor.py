@@ -55,7 +55,7 @@ async def rig():
     )
     await runtime.async_recalculate()
     await runtime.async_record_comparison({"allowed": True})
-    await runtime.async_request_cutover(confirmed=True)
+    await runtime.async_request_cutover(confirmed=True, commissioning_confirmed=True)
     return runtime, disk, values, stamps, calls, gate
 
 
@@ -65,7 +65,7 @@ async def test_no_cutover_without_confirmation_or_comparison():
     runtime.mode = "shadow"
     runtime.comparison = None
     with pytest.raises(ValueError):
-        await runtime.async_request_cutover(confirmed=True)
+        await runtime.async_request_cutover(confirmed=True, commissioning_confirmed=True)
     assert calls == []
 
 

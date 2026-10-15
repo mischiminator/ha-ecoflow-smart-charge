@@ -25,3 +25,6 @@ def test_ci_pins_actions_and_uses_locked_test_runner():
     assert "requirements-lint.txt" in commands
     assert "python-version: '3.14.7'" in source
     assert "comment: false" in source
+    hacs = workflow["jobs"]["hacs"]
+    action = next(s for s in hacs["steps"] if s.get("uses", "").startswith("hacs/action@"))
+    assert action["env"]["REPOSITORY_REF"] == "${{ github.sha }}"

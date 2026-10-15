@@ -9,7 +9,11 @@ from custom_components.ecoflow_smart_charge.const import DOMAIN
 
 
 @pytest.mark.usefixtures("enable_custom_integrations")
-async def test_entry_setup_is_shadow_by_default_and_registers_targeted_services(hass) -> None:
+async def test_entry_setup_is_shadow_by_default_and_registers_targeted_services(
+    hass, freezer
+) -> None:
+    # Keep the minute/quarter-hour refresh timers outside this passive-setup assertion.
+    freezer.move_to("2026-01-04T20:01:30+00:00")
     entry = MockConfigEntry(
         domain=DOMAIN,
         title="Test controller",

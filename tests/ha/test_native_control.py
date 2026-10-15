@@ -5,7 +5,9 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
+import voluptuous as vol
 from homeassistant.core import SupportsResponse
+from homeassistant.exceptions import ServiceValidationError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from test_source_pipeline import data_states
 
@@ -72,8 +74,24 @@ async def test_native_cutover_conflict_and_verified_restoration(hass, freezer, r
         await hass.services.async_call(
             DOMAIN, "record_shadow_comparison", {**target, "expected": expected}, blocking=True
         )
+        # A copied native output is not an independent legacy commissioning check.
+        with pytest.raises(vol.Invalid):
+            await hass.services.async_call(
+                DOMAIN, "request_cutover", {**target, "confirmed": True}, blocking=True
+            )
+        with pytest.raises(ServiceValidationError):
+            await hass.services.async_call(
+                DOMAIN,
+                "request_cutover",
+                {**target, "confirmed": True, "commissioning_confirmed": False},
+                blocking=True,
+            )
+        assert runtime.mode == "shadow" and not runtime.authorized and calls == []
         await hass.services.async_call(
-            DOMAIN, "request_cutover", {**target, "confirmed": True}, blocking=True
+            DOMAIN,
+            "request_cutover",
+            {**target, "confirmed": True, "commissioning_confirmed": True},
+            blocking=True,
         )
         await asyncio.gather(
             *(

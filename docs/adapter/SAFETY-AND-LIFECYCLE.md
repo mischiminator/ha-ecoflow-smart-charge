@@ -56,8 +56,12 @@ Startup is always shadow, even with persisted active options. Shadow is absolute
 recalculate, timer, restore, unload and replay send zero hardware calls. A pending
 session remains visible, blocks cutover and is not automatically recovered.
 
-Cutover requires an explicit confirmed service, a successfully persisted recent
-shadow comparison, valid current sources, master permission, no session, three
+Cutover requires `confirmed:true` AND `commissioning_confirmed:true` attesting
+separately authorized independent legacy/meter/device commissioning. The stored
+comparison matches operator-supplied values to native output, not authenticated
+legacy output; it is not independent parity proof. Missing/false attestation or
+any changed expected value blocks activation. Cutover also requires a successfully
+persisted recent comparison, valid current sources, master permission, no session, three
 fresh original reserves and all selected legacy writers explicitly off. Unknown,
 unavailable or absent writer entities fail closed. Ownership and charging gates
 are rechecked before every hardware call, including after the save that yields
