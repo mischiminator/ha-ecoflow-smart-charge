@@ -58,3 +58,21 @@ Restart never silently resumes active charging. Full-charge marker survives sess
 ## Dashboard
 
 Entity mapping alone is insufficient. See [CARD-COMPATIBILITY.md](CARD-COMPATIBILITY.md) for the opt-in card update specification. Use native HA standard cards until that separate update is implemented and verified. Keep the old dashboard/resource available for rollback.
+
+## Independent commissioning is an external gate
+
+`record_shadow_comparison` checks operator-supplied values against native output;
+it cannot authenticate their origin or prove legacy parity. Copying native values
+back is NOT independent evidence. Before activation, a separately authorized
+operator must retain a same-input legacy/reference comparison, required meter
+history/unit/sign/reset checks and supervised individual device readback and
+rollback evidence outside this public repository. Unresolved or differing results
+block activation. This work has NOT performed those physical checks.
+
+`request_cutover` now requires BOTH `confirmed: true` and
+`commissioning_confirmed: true`. The latter is an explicit human attestation of
+that external gate, not an automated test result or a safe default. Missing/false
+attestation is rejected; even an attested comparison expires after 20 minutes and
+is rejected if any recorded value differs from the refreshed native plan. No
+service automatically authorizes itself from native output. All writer, reserve,
+journal and freshness checks remain mandatory. Restart/reload remains shadow.

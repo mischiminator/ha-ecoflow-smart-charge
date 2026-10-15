@@ -107,6 +107,10 @@
         "confirmed": {
           "name": "Explicit confirmation",
           "description": "Intentionally set true only after all safety checks; never default opt-in."
+        },
+        "commissioning_confirmed": {
+          "name": "External commissioning confirmed",
+          "description": "Attest only after separately authorized and documented independent legacy, meter and device checks. Not automatic parity verification; copied native values are insufficient."
         }
       }
     },
@@ -126,7 +130,7 @@
     },
     "record_shadow_comparison": {
       "name": "Record shadow comparison",
-      "description": "Record only exactly matching valid shadow output and comparison values; no hardware commands.",
+      "description": "Matches operator-supplied values only to native output. Does not verify provenance or legacy parity; independent commissioning remains an external authorization gate. No hardware commands.",
       "fields": {
         "config_entry_id": {
           "name": "Integration entry",

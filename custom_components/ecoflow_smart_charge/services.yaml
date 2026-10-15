@@ -18,6 +18,10 @@ record_shadow_comparison:
         object:
 request_cutover:
   fields:
+    commissioning_confirmed:
+      required: true
+      selector:
+        boolean:
     config_entry_id:
       required: true
       selector:

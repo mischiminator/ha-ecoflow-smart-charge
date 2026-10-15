@@ -8,7 +8,7 @@ In HA Developer tools → Actions select EcoFlow Smart Charge and exactly the in
 |---|---|---|
 | `recalculate` | none | Refresh via guarded runtime; shadow is non-writing, active may act only under safety gates |
 | `record_shadow_comparison` | `expected` object | Exact fields: allowed boolean, reason string, profile_valid boolean, advantage number or null, net_saving number. Uses unrounded compared values and valid shadow output; never writes hardware |
-| `request_cutover` | `confirmed` boolean | Only intentional true can authorize safe cutover after all gates; never disables old writers |
+| `request_cutover` | `confirmed`, `commissioning_confirmed` booleans | Only intentional true can authorize safe cutover after all gates; never disables old writers |
 | `confirm_recovery` | `confirmed` boolean | Explicit true authorizes exclusive restoration outside shadow, then returns to shadow. Not a charging bypass; not proof of restored hardware |
 | `import_state` | `payload` object, `apply` boolean default false | Supports optional response; false validates/previews only, true commits reviewed state without hardware commands |
 
@@ -28,3 +28,21 @@ The synthetic JSON is checked with the real `validate_import` function in a pack
 ## Human-readable names
 
 All native entities now expose supported HA translation keys and matching English/German names, including session_active and the four added planning sensors. A real HA registry test verifies every platform/key against all shipped inventories. Unique IDs are unchanged; existing operator-assigned names/entity IDs are not rewritten. Raw decision/status machine codes are not localized. Never reassign targets just to change a label.
+
+## Independent commissioning is an external gate
+
+`record_shadow_comparison` checks operator-supplied values against native output;
+it cannot authenticate their origin or prove legacy parity. Copying native values
+back is NOT independent evidence. Before activation, a separately authorized
+operator must retain a same-input legacy/reference comparison, required meter
+history/unit/sign/reset checks and supervised individual device readback and
+rollback evidence outside this public repository. Unresolved or differing results
+block activation. This work has NOT performed those physical checks.
+
+`request_cutover` now requires BOTH `confirmed: true` and
+`commissioning_confirmed: true`. The latter is an explicit human attestation of
+that external gate, not an automated test result or a safe default. Missing/false
+attestation is rejected; even an attested comparison expires after 20 minutes and
+is rejected if any recorded value differs from the refreshed native plan. No
+service automatically authorizes itself from native output. All writer, reserve,
+journal and freshness checks remain mandatory. Restart/reload remains shadow.

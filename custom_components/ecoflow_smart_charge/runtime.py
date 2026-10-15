@@ -244,7 +244,7 @@ class Runtime:
             self.comparison = comparison
             self.notify()
 
-    async def async_request_cutover(self, *, confirmed=False):
+    async def async_request_cutover(self, *, confirmed=False, commissioning_confirmed=False):
         async with self._lock:
             gate = await self._gate()
             age = (
@@ -256,16 +256,21 @@ class Runtime:
             )
             if (
                 not confirmed
+                or commissioning_confirmed is not True
                 or self.mode != "shadow"
+                or not self.comparison
                 or self.journal.record
                 or self.journal.blocked
                 or not self._mapping_valid()
                 or not 0 <= age < 1200
+                or any(gate.get(k) != v for k, v in self.comparison.get("expected", {}).items())
+                or not self.comparison.get("expected")
                 or not all(gate.get(k) for k in ("valid", "owned", "master"))
             ):
                 self.status = "cutover_not_safe"
                 raise ValueError(
-                    "cutover requires confirmed fresh comparison, validity and exclusive ownership"
+                    "cutover requires external commissioning confirmation, fresh unchanged comparison, "
+                    "validity and exclusive ownership"
                 )
             for entity in self.writers:
                 try:

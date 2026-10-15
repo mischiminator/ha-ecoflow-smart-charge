@@ -23,7 +23,13 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     target = {vol.Required("config_entry_id"): str}
     schemas = {
         "recalculate": vol.Schema(target),
-        "request_cutover": vol.Schema({**target, vol.Required("confirmed"): bool}),
+        "request_cutover": vol.Schema(
+            {
+                **target,
+                vol.Required("confirmed"): bool,
+                vol.Required("commissioning_confirmed"): bool,
+            }
+        ),
         "confirm_recovery": vol.Schema({**target, vol.Required("confirmed"): bool}),
         "record_shadow_comparison": vol.Schema(
             {
@@ -53,7 +59,10 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             if call.service == "recalculate":
                 await runtime.async_recalculate()
             elif call.service == "request_cutover":
-                await runtime.async_request_cutover(confirmed=call.data["confirmed"])
+                await runtime.async_request_cutover(
+                    confirmed=call.data["confirmed"],
+                    commissioning_confirmed=call.data["commissioning_confirmed"],
+                )
             elif call.service == "confirm_recovery":
                 await runtime.async_confirm_recovery(confirmed=call.data["confirmed"])
             elif call.service == "record_shadow_comparison":

@@ -21,3 +21,21 @@ Stable entity keys (unique_id = entry_id + '_' + key):
 No private defaults. Native entity names use supported HA translation keys and the shipped EN/DE inventories, verified against the real registry for all six platforms during integration reconciliation. Unique IDs remain unchanged; raw state/reason codes are not localized. Sensors with unavailable plan are unknown, never fabricated zero projections.
 
 Config source selections: grid_energy_entity, pv_entity, price_entity, price_window_entity, forecast_today_entity, forecast_remaining_entity, forecast_tomorrow_entity, sun_entity; ordered triples soc_entities/reserve_entities/self_powered_entities/operating_mode_entities/charge_energy_entities/discharge_energy_entities; tariff_key explicit string; legacy_writer_entities explicit nonempty list of automation entities. Slot order must match across every triple. Reconfigure mappings only without a pending journal. Options: master, bounded numbers, mode restricted to shadow; options cannot activate hardware.
+
+## Independent commissioning is an external gate
+
+`record_shadow_comparison` checks operator-supplied values against native output;
+it cannot authenticate their origin or prove legacy parity. Copying native values
+back is NOT independent evidence. Before activation, a separately authorized
+operator must retain a same-input legacy/reference comparison, required meter
+history/unit/sign/reset checks and supervised individual device readback and
+rollback evidence outside this public repository. Unresolved or differing results
+block activation. This work has NOT performed those physical checks.
+
+`request_cutover` now requires BOTH `confirmed: true` and
+`commissioning_confirmed: true`. The latter is an explicit human attestation of
+that external gate, not an automated test result or a safe default. Missing/false
+attestation is rejected; even an attested comparison expires after 20 minutes and
+is rejected if any recorded value differs from the refreshed native plan. No
+service automatically authorizes itself from native output. All writer, reserve,
+journal and freshness checks remain mandatory. Restart/reload remains shadow.

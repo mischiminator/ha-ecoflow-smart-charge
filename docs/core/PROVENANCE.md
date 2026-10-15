@@ -60,6 +60,10 @@ The two `.jinja` fixtures are code-only extracts of evidence L's exact captured
 approximations. Only the private tariff selector was replaced with
 `fixture_tariff`; there are no entity IDs, URLs, tokens or measured values.
 The private source location/hash is held outside Git in the foundation ledger.
+Mischa Fürst's 2026-10-15 confirmation that the source was owner-created with AI
+assistance, resolving the earlier third-party permission concern, is recorded in
+`../release/PROVENANCE.md` under "Owner confirmation". This applies to these
+code-only extracts; it does not authorize publication of private household data.
 Sanitized fixture SHA256:
 
 - live_projection.jinja: 02cec6d8b84ddd6fe2ce0666610191dc9e4f608aaddf2e344d547fc5bf341fc4

@@ -41,6 +41,8 @@ jobs:
     steps:
       - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
       - uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa
+        env:
+          REPOSITORY_REF: ${{ github.sha }}
         with:
           category: integration
           repository: mischiminator/ha-ecoflow-smart-charge
