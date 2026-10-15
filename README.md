@@ -4,11 +4,11 @@ Native Home Assistant custom integration for a **shadow-first** EcoFlow price-ch
 
 > Safety status: this repository is an implementation candidate, not an installed controller. HA Core 2026.10.1 lifecycle/config-flow tests are executed locally, but the Recorder-to-planner adapter, real tariff parsing, migration importer, and active-controller cutover remain incomplete. Do not use `active` mode until those pieces and a supervised, explicitly approved cutover have passed.
 
-## Safety model
+## Safety requirements (implementation incomplete)
 
-- New entries start in `shadow`; no runtime route sends a reserve service call in shadow mode.
+- New entries start in `shadow`. Absolute zero hardware calls on every shadow route is required; the inherited recovery route still needs adapter hardening.
 - The pure planner rejects stale sources, invalid rows, insufficient history, price gaps, invalid parameters, missing protection mode, price-ceiling, solar-surplus, marker, price-advantage and net-saving failures.
-- The required grid source must be selected as the operator-selected net grid-energy meter; no fallback EcoFlow/Tibber counter is implemented.
+- The required grid source must be the operator-selected mandated net-energy meter; no fallback EcoFlow/Tibber counter is implemented.
 - A session journal captures the three individual pre-session reserves using HA `Store.async_save` before any real command. Restoration only clears after individual readback; partial failures remain recovery pending.
 - Active mode is deliberately not automatically cut over, and the integration never changes EcoFlow operating modes.
 
@@ -22,7 +22,7 @@ PV forecast is distributed by the historic hourly PV profile. A median PV correc
 
 `(avoided_price - current_price) / avoided_price * 100`
 
-The public new-install default is 20%. A migration must explicitly import the existing threshold and price ceiling; it must not reset either value.
+The public new-install default is 20%. A migration must explicitly import the existing threshold and ceiling; it must not reset either value.
 
 ## Install (future HACS publication)
 
@@ -31,11 +31,11 @@ After a verified public GitHub release, add `mischiminator/ha-ecoflow-smart-char
 ## Migration and rollback
 
 1. Keep legacy automations enabled and configure the integration with the required smart-meter source.
-2. Import validated current options and inactive session/learning state through an integration-owned import UX (never `.storage`). Preserve the existing threshold and price ceiling.
+2. Import validated current options and inactive session/learning state through an integration-owned import UX (never `.storage`). Preserve the imported settings without replacing them with defaults.
 3. Run shadow comparisons across recorded price cycles. Document expected differences caused by the mandated source transition; do not fabricate history or substitute a source.
 4. Confirm Recorder unit/history availability and profile transition evidence.
 5. Take a fresh legacy automation/card backup. With explicit approval only, disable command-capable legacy control writers, then request supervised cutover.
-6. If anything fails, return mode to shadow, wait for confirmed individual reserve restoration, re-enable the saved legacy automations, and verify them in HA. Do not claim a restore without readback.
+6. If anything fails, stop new charging and restore individual reserves under explicitly authorized exclusive recovery ownership. Confirm all readbacks before returning to shadow and re-enabling legacy writers. Shadow itself must never send restore commands.
 
 ## Development checks
 
