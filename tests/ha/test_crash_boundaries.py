@@ -120,7 +120,7 @@ async def test_full_marker_is_saved_before_restore_command_and_survives_clear():
     assert disk.data["session"] is None
 
 
-@pytest.mark.parametrize("operation", ["async_close", "async_set_shadow"])
+@pytest.mark.parametrize("operation", ["async_close", "async_set_shadow", "master_off"])
 async def test_stop_persistence_failure_still_revokes_active_authorization(operation):
     r, disk, values, _stamps, calls, _gate = await setup()
     await r.async_start(values)
@@ -130,7 +130,10 @@ async def test_stop_persistence_failure_still_revokes_active_authorization(opera
 
     disk.async_save = failed_save
     with pytest.raises(OSError):
-        await getattr(r, operation)()
+        if operation == "master_off":
+            await r.async_set_setting("master", False)
+        else:
+            await getattr(r, operation)()
     assert r.mode == "shadow"
     assert not r.authorized
     assert r.journal.record is not None

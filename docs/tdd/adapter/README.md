@@ -21,7 +21,7 @@ no outcome text invented).
 | Completed PV learning | adapter-learning-red.log | incomplete day does not finalize/overwrite prior probe |
 | Malformed journal fields | adapter-corruption-red.log | five observed failures corrected; invalid mapping/readback stays blocked |
 | Reconfigure safety | adapter-reconfigure-red.log | overlapping reserves and blocked/pending journal rejected |
-| Stop on persistence failure | adapter-stop-red.log | both observed failures corrected; close/shadow revoke authorization in finally |
+| Stop on persistence failure | adapter-stop-red.log; adapter-master-off-red.log | close/shadow/master-off revoke authorization in finally even when restoration save fails |
 | Bounded identical retries | adapter-ratelimit-red.log | persisted target-aware 30-second retry interval |
 | Config-entry-only schema | adapter-schema-red.log | CONFIG_SCHEMA declared using supported HA validation helper |
 | Forecast Wh equivalence | adapter-forecast-unit-red.log | 6000Wh probe equals 6kWh, limits applied in source unit |
@@ -50,7 +50,7 @@ With the pinned compatible HA environment, from repository root:
     uvx --from ruff==0.17.0 ruff check custom_components/ecoflow_smart_charge --exclude planner tests/ha tests/test_runtime.py tests/test_config_flow.py tests/test_safety_regressions.py tests/test_ha_integration.py
     uvx --from ruff==0.17.0 ruff format --check custom_components/ecoflow_smart_charge --exclude planner tests/ha tests/test_runtime.py tests/test_config_flow.py tests/test_safety_regressions.py tests/test_ha_integration.py
 
-Final scoped result: 64 passed, zero failures/errors/skips. HA 2026.10.1,
+Final scoped result: 65 passed, zero failures/errors/skips. HA 2026.10.1,
 pytest-homeassistant-custom-component 0.13.372, Python 3.14.7. IP sockets disabled;
 local Unix sockets permitted for asyncio. Hardware transport is substituted.
 

@@ -318,8 +318,16 @@ class Runtime:
 
         validate_settings({key: value})
         async with self._lock:
-            if key == "master" and not value and self.mode == "active" and self.journal.record:
-                await self._restore()
+            if key == "master" and not value and self.mode == "active":
+                try:
+                    if self.journal.record:
+                        await self._restore()
+                finally:
+                    self.mode = "shadow"
+                    self.authorized = False
+                    self.comparison = None
+                    self.status = "recovery_pending" if self.journal.record else "shadow"
+                    self.notify()
             options = {**self.entry.options, key: value, "mode": "shadow"}
             self.applied_options = dict(options)
             self.hass.config_entries.async_update_entry(self.entry, options=options)
