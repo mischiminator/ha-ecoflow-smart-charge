@@ -1,0 +1,51 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.7, pytest-9.0.3, pluggy-1.7.0
+codspeed: 5.0.3 (disabled, mode: walltime, callgraph: enabled, timer_resolution: 1.0ns)
+rootdir: /opt/data/projects/ha-ecoflow-smart-charge
+configfile: pyproject.toml
+testpaths: tests
+plugins: pytest_freezer-0.4.9, unordered-0.8.0, xdist-3.8.0, cov-7.1.0, syrupy-6.1.1, respx-0.23.1, homeassistant-custom-component-0.13.372, github-actions-annotate-failures-0.4.2, aiohttp-1.1.1, timeout-2.4.0, socket-0.8.1, anyio-4.15.1, asyncio-1.4.0, picked-0.5.1, requests-mock-1.12.1, codspeed-5.0.3
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 235 items
+
+tests/foundation/test_core_isolation.py .                                [  0%]
+tests/foundation/test_runner.py .                                        [  0%]
+tests/ha/test_crash_boundaries.py ........                               [  4%]
+tests/ha/test_executor.py .......                                        [  7%]
+tests/ha/test_import_restart.py ......                                   [  9%]
+tests/ha/test_journal.py .........                                       [ 13%]
+tests/ha/test_manager_lifecycle.py .                                     [ 14%]
+tests/ha/test_native.py ....                                             [ 15%]
+tests/ha/test_native_control.py ..                                       [ 16%]
+tests/ha/test_pv_statistics.py .                                         [ 17%]
+tests/ha/test_reader.py ......                                           [ 19%]
+tests/ha/test_reconfigure_safety.py .                                    [ 20%]
+tests/ha/test_release_alignment.py ......                                [ 22%]
+tests/ha/test_release_recovery.py ......                                 [ 25%]
+tests/ha/test_sampling.py ....                                           [ 26%]
+tests/ha/test_shadow_recovery.py .                                       [ 27%]
+tests/ha/test_source_pipeline.py ...                                     [ 28%]
+tests/ha/test_statistics_validation.py ..                                [ 29%]
+tests/packaging/test_ci.py .                                             [ 29%]
+tests/packaging/test_documentation.py ...                                [ 31%]
+tests/packaging/test_localization.py ..                                  [ 31%]
+tests/packaging/test_release_metadata.py .                               [ 32%]
+tests/test_config_flow.py .                                              [ 32%]
+tests/test_ha_integration.py .                                           [ 33%]
+tests/test_planner.py .........                                          [ 37%]
+tests/test_runtime.py .....                                              [ 39%]
+tests/test_safety_regressions.py ....                                    [ 40%]
+tests/unit/test_configuration_learning.py ...                            [ 42%]
+tests/unit/test_economics.py .                                           [ 42%]
+tests/unit/test_isolation.py .                                           [ 42%]
+tests/unit/test_learning.py ........                                     [ 46%]
+tests/unit/test_live_parity.py ......................................... [ 63%]
+.......                                                                  [ 66%]
+tests/unit/test_policy_boundaries.py ............................        [ 78%]
+tests/unit/test_profile.py .......                                       [ 81%]
+tests/unit/test_profile_boundaries.py ........                           [ 85%]
+tests/unit/test_solar.py .....                                           [ 87%]
+tests/unit/test_validation.py ..............................             [100%]
+
+- generated xml file: /opt/data/projects/ecoflow-integration-migration/integration-tests.xml -
+============================= 235 passed in 3.11s ==============================
