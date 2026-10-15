@@ -1,0 +1,24 @@
+recalculate:
+  name: Recalculate shadow plan
+  description: Recompute through the configured entry without writing to devices.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        text:
+confirm_recovery:
+  name: Confirm recovery
+  description: Permit a pending journal recovery only after operator confirmation and source readback.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        text:
+request_cutover:
+  name: Request cutover
+  description: Request active mode; the runtime must still validate all safety gates.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        text:
