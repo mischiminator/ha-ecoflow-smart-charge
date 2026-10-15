@@ -353,6 +353,9 @@ class SourceReader:
             self.input = None
             self.last_plan = None
             self.error = "source_unavailable_or_invalid"
+        # Source reads yield to HA; never authorize from the pre-await writer state.
+        # This synchronous final read covers successful and failed source refreshes.
+        gate["owned"] = self.ownership()
         return gate
 
     async def learn(self):
@@ -371,15 +374,19 @@ class SourceReader:
             raw["probe_kwh"],
             date.fromisoformat(raw["learned_day"]) if raw["learned_day"] else None,
         )
-        yesterday = now.date() - timedelta(days=1)
-        midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
         data = self.entry.data
-        if state.probe_day == yesterday and state.learned_day != yesterday:
+        if (
+            state.probe_day is not None
+            and state.probe_day < now.date()
+            and state.learned_day != state.probe_day
+        ):
+            # Resume the retained completed day even if HA missed the next-day window.
+            start = datetime.combine(state.probe_day, datetime.min.time(), tzinfo=now.tzinfo)
             actual, count = await read_daily_pv(
-                self.hass, data["pv_entity"], midnight - timedelta(days=1), midnight
+                self.hass, data["pv_entity"], start, start + timedelta(days=1)
             )
             if count >= 23:
-                state = learn_day(state, day=yesterday, actual_kwh=actual, hourly_rows=count)
+                state = learn_day(state, day=state.probe_day, actual_kwh=actual, hourly_rows=count)
         if now.hour >= 5:
             try:
                 forecast = self.numeric(
