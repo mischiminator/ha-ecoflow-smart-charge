@@ -3,6 +3,12 @@
 Releases are created by pushing a `vX.Y.Z` tag; the release workflow checks the tag against
 `manifest.json`, `pyproject.toml` and this file and publishes the section below as release notes.
 
+## [1.0.5] - 2026-11-02
+
+### Fixed
+- The activity log no longer fills with "Plan updated" entries every few seconds. The plan timestamp now shows the planning quarter hour (a timestamp sensor in the diagnostic category), so it changes at most four times an hour.
+- Fewer refreshes: only the best-price window, price, Self-powered switches, reserves and the sun trigger an immediate re-plan. Grid, PV and battery meters, SOC and forecasts report every few seconds and are covered by the minute safety check and the quarter-hour plan.
+
 ## [1.0.4] - 2026-11-02
 
 ### Changed

@@ -200,12 +200,19 @@ class SourceReader:
 
         return {**data, "pv_entity": own_pv_entity(self.hass, self.entry.entry_id)}
 
-    def selected_ids(self):
-        from .config_flow import SINGLES, TRIPLES
+    def trigger_ids(self):
+        """Sources whose change can flip the charge decision at once.
 
+        Meters, SOC and forecasts report every few seconds; the minute safety check and
+        the quarter-hour plan cover them without a refresh per report.
+        """
         data = self.entry.data
-        result = [data[k] for k in SINGLES if isinstance(data.get(k), str)]
-        for key in TRIPLES:
+        result = [
+            data[k]
+            for k in ("price_window_entity", "price_entity", "sun_entity")
+            if isinstance(data.get(k), str)
+        ]
+        for key in ("self_powered_entities", "reserve_entities"):
             if isinstance(data.get(key), list):
                 result.extend(data[key])
         return result

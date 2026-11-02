@@ -8,6 +8,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
+from homeassistant.const import EntityCategory
 from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import async_track_state_change_event, async_track_time_interval
@@ -75,6 +76,10 @@ class PlanSensor(RuntimeEntity, SensorEntity):
             self._attr_native_unit_of_measurement = "ct/kWh"
         elif key in ("price_advantage_percent", "target_soc"):
             self._attr_native_unit_of_measurement = "%"
+        elif key == "plan_updated":
+            self._attr_device_class = SensorDeviceClass.TIMESTAMP
+        if key in ("plan_updated", "profile_samples", "full_marker_day"):
+            self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def extra_state_attributes(self):
@@ -99,7 +104,13 @@ class PlanSensor(RuntimeEntity, SensorEntity):
             return self.runtime.journal.full_marker_day
         inp = self.runtime.reader.input
         if self.key == "plan_updated":
-            return inp.now.isoformat() if inp else None
+            # The planning quarter hour, not every refresh: a per-second stamp floods the
+            # logbook and the recorder.
+            return (
+                inp.now.replace(minute=inp.now.minute // 15 * 15, second=0, microsecond=0)
+                if inp
+                else None
+            )
         if self.key == "profile_samples":
             return min(inp.profile.samples_by_hour) if inp else None
         if self.key == "corrected_forecast_kwh":

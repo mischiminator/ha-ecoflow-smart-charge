@@ -222,3 +222,43 @@ async def test_entry_service_requires_correct_target(hass):
         )
     assert entry.runtime_data.mode == "shadow"
     assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.usefixtures("enable_custom_integrations")
+async def test_frequent_meters_do_not_trigger_refreshes_or_logbook_noise(hass):
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from homeassistant.const import EntityCategory
+
+    entry = MockConfigEntry(domain=DOMAIN, data=mapping(hass))
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    runtime = entry.runtime_data
+    triggers = set(runtime.reader.trigger_ids())
+    # Decision-relevant sources refresh at once; meters, SOC and forecasts wait for the tick.
+    assert {"binary_sensor.window", "sensor.price", "sun.test"} <= triggers
+    assert (
+        set(entry.data["reserve_entities"]) | set(entry.data["self_powered_entities"]) <= triggers
+    )
+    for quiet in ("sensor.grid", "sensor.pv", "sensor.forecast_today", *entry.data["soc_entities"]):
+        assert quiet not in triggers
+    registry = er.async_get(hass)
+    plan = registry.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_plan_updated")
+    assert registry.async_get(plan).entity_category is EntityCategory.DIAGNOSTIC
+    # The plan timestamp moves per quarter hour, not per refresh.
+    runtime.reader.input = SimpleNamespace(
+        now=datetime(2026, 11, 2, 21, 52, 37, 123, tzinfo=UTC),
+        below_horizon=True,
+        forecast_today=0.0,
+        forecast_tomorrow=4.0,
+        pv_correction=1.0,
+        profile=SimpleNamespace(samples_by_hour=(3,) * 24),
+    )
+    runtime.notify()
+    await hass.async_block_till_done()
+    state = hass.states.get(plan)
+    assert state.state == "2026-11-02T21:45:00+00:00"
+    assert state.attributes["device_class"] == "timestamp"
+    assert await hass.config_entries.async_unload(entry.entry_id)
