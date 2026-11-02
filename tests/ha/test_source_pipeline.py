@@ -172,3 +172,50 @@ async def test_full_soc_is_retained_for_marker_even_if_tariff_fails(hass):
         result = await reader.refresh()
         assert not result["valid"]
         assert result["full"]
+
+
+async def test_shadow_plans_without_self_powered_but_active_requires_it(hass):
+    from custom_components.ecoflow_smart_charge.reader import SourceReader
+    from custom_components.ecoflow_smart_charge.storage import PersistentSessionStore
+
+    class Disk:
+        async def async_save(self, data):
+            self.data = data
+
+    now = datetime.now(UTC)
+    data = data_states(hass, now)
+    for entity in data["self_powered_entities"]:
+        hass.states.async_set(entity, "off")
+    start = datetime.fromtimestamp(int(now.timestamp() // 900) * 900, UTC)
+
+    async def prices(call):
+        rows = [
+            {"start_time": (start + timedelta(minutes=15 * i)).isoformat(), "price": 0.10}
+            for i in range(192)
+        ]
+        return {"prices": {"Chosen": rows}}
+
+    hass.services.async_register(
+        "tibber", "get_prices", prices, supports_response=SupportsResponse.ONLY
+    )
+    rows = [
+        {
+            "start": (now - timedelta(days=d)).replace(hour=h, minute=0, second=0, microsecond=0),
+            "grid": 2.0,
+            "pv": 0.0,
+            "charges": (0.0, 0.0, 0.0),
+            "discharges": (0.0, 0.0, 0.0),
+        }
+        for d in range(1, 15)
+        for h in range(24)
+    ]
+    with patch("custom_components.ecoflow_smart_charge.reader.read_statistics", return_value=rows):
+        for mode, reason_blocked in (("shadow", False), ("active", True)):
+            entry = MockConfigEntry(
+                domain=DOMAIN, data=data, options={"master": True, "mode": mode}
+            )
+            reader = SourceReader(hass, entry, PersistentSessionStore(Disk()))
+            gate = await reader.refresh()
+            assert gate["self_powered"] is False
+            assert (gate["reason"] == "protection_mode_required") is reason_blocked, mode
+            assert gate["valid"] is not reason_blocked, mode

@@ -3,6 +3,12 @@
 Releases are created by pushing a `vX.Y.Z` tag; the release workflow checks the tag against
 `manifest.json`, `pyproject.toml` and this file and publishes the section below as release notes.
 
+## [1.0.2] - 2026-11-02
+
+### Changed
+- Shadow mode plans even when the batteries are not in Self-powered mode (e.g. AI mode), since it never commands the devices. Active mode still requires Self-powered on every battery, and switching to active re-checks it before any command.
+- The decision reason sensor exposes `self_powered`; in shadow mode the dashboard card notes when active mode would still need it.
+
 ## [1.0.1] - 2026-11-02
 
 ### Fixed

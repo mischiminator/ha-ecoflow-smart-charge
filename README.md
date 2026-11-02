@@ -17,7 +17,7 @@ Native Home Assistant integration that charges one or more EcoFlow batteries (up
 - Before the first command, the original reserve of every battery is saved durably. The integration is the sole writer, serializes every command and requires an independent, fresh device readback; a service acknowledgement is not confirmation.
 - Reserves are never set below the user's own value. The current target is stored with the session and survives restarts.
 - When charging is no longer allowed (window ended, price, master switch off, batteries full), the saved reserves are restored and read back. Only completely full batteries set the solar-day marker; otherwise a later window of the same solar day (e.g. at noon after a night session) may top up again. A pending session and the solar-day full-charge marker survive restarts.
-- Unknown or stale sources block charging, as does any battery whose Self-powered operating mode is off. The integration never changes the battery operating mode to obtain permission to charge.
+- Unknown or stale sources block charging, as does any battery whose Self-powered operating mode is off in active mode (shadow mode plans without it). The integration never changes the battery operating mode to obtain permission to charge.
 
 ## Modes and controls
 
