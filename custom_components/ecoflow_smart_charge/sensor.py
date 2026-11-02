@@ -9,6 +9,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.core import callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import async_track_state_change_event, async_track_time_interval
 from homeassistant.util import dt as dt_util
 
@@ -38,7 +39,34 @@ KEYS = {
 }
 
 
+def card_sources(hass, data):
+    """Entity IDs the dashboard card shows next to the plan; never recorded."""
+    devices = dr.async_get(hass)
+    device_ids = data.get("battery_devices") or []
+    capacities = data.get("capacities_kwh") or []
+    batteries = []
+    for index, (soc, reserve) in enumerate(
+        zip(data.get("soc_entities", []), data.get("reserve_entities", []), strict=False)
+    ):
+        device = devices.async_get(device_ids[index]) if index < len(device_ids) else None
+        batteries.append(
+            {
+                "name": (device.name_by_user or device.name) if device else str(index + 1),
+                "soc_entity": soc,
+                "reserve_entity": reserve,
+                "capacity_kwh": capacities[index] if index < len(capacities) else None,
+            }
+        )
+    return {
+        "batteries": batteries,
+        "price_entity": data.get("price_entity"),
+        "price_window_entity": data.get("price_window_entity"),
+    }
+
+
 class PlanSensor(RuntimeEntity, SensorEntity):
+    _unrecorded_attributes = frozenset({"batteries", "price_entity", "price_window_entity"})
+
     def __init__(self, entry, key, name):
         super().__init__(entry, key, name)
         if key.endswith("_kwh") or key == "grid_kwh":
@@ -47,6 +75,10 @@ class PlanSensor(RuntimeEntity, SensorEntity):
             self._attr_native_unit_of_measurement = "ct/kWh"
         elif key in ("price_advantage_percent", "target_soc"):
             self._attr_native_unit_of_measurement = "%"
+
+    @property
+    def extra_state_attributes(self):
+        return card_sources(self.hass, self.entry.data) if self.key == "status" else None
 
     @property
     def native_value(self):

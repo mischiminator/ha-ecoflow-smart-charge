@@ -30,6 +30,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
                 "controller request rejected: " + type(err).__name__
             ) from err
 
+    await _register_card(hass)
     if not hass.services.has_service(DOMAIN, "recalculate"):
         hass.services.async_register(
             DOMAIN,
@@ -38,6 +39,25 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             schema=vol.Schema({vol.Required("config_entry_id"): str}),
         )
     return True
+
+
+async def _register_card(hass: HomeAssistant) -> None:
+    """Serve the bundled dashboard card and load it on every frontend page."""
+    if hass.http is None or "frontend" not in hass.config.components:
+        return
+    import hashlib
+    from pathlib import Path
+
+    from homeassistant.components.frontend import add_extra_js_url
+    from homeassistant.components.http import StaticPathConfig
+
+    from .const import CARD_URL
+
+    path = Path(__file__).parent / "frontend" / "ecoflow-smart-charge-card.js"
+    content = await hass.async_add_executor_job(path.read_bytes)
+    await hass.http.async_register_static_paths([StaticPathConfig(CARD_URL, str(path), False)])
+    # The content hash busts browser caches after every update.
+    add_extra_js_url(hass, f"{CARD_URL}?v={hashlib.sha256(content).hexdigest()[:12]}")
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

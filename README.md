@@ -30,6 +30,17 @@ Native Home Assistant integration that charges one or more EcoFlow batteries (up
 
 Switching from `active` to `shadow` first restores the reserves of a running session. If a readback is still outstanding, the session stays pending in shadow; switch back to `active` to finish the restoration. The planner runs every quarter hour, a safety check runs every minute, and source state changes trigger a refresh.
 
+## Dashboard card
+
+The integration ships its own Lovelace card and loads it automatically — no resource to add. Add **EcoFlow Smart Charge** from the card picker or use:
+
+```yaml
+type: custom:ecoflow-smart-charge-card
+# device_id: only needed with more than one EcoFlow Smart Charge entry
+```
+
+The card finds the entry's entities through its service device and shows status and reason, the charge target, current price, solar surplus, net saving, planned grid charge, the current or next best-price window, the capacity-weighted total level and every battery with its reserve (tap for history). The gear opens a dialog for the master switch, controller mode and all numbers; every change is read back from Home Assistant before it counts as saved. Texts follow the Home Assistant language (German or English).
+
 ## Requirements
 
 Home Assistant 2026.10.1 or newer (Python ≥ 3.14.2) with Recorder and these integrations — no template, `input_*` or other helpers need to be created:

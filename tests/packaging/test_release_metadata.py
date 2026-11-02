@@ -23,7 +23,8 @@ def test_release_metadata_declares_tested_compatibility():
     assert manifest["iot_class"] == "local_push"
     assert manifest["codeowners"] == ["@mischiminator"]
     assert manifest.get("requirements", []) == []
-    assert manifest.get("after_dependencies") == ["recorder"]
+    # frontend/http only serve the bundled card; the integration runs without them.
+    assert manifest.get("after_dependencies") == ["frontend", "http", "recorder"]
     assert set(manifest) >= {"documentation", "issue_tracker", "name", "version"}
     domains = [
         p.name for p in COMPONENT.parent.iterdir() if p.is_dir() and not p.name.startswith("_")
