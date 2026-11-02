@@ -1,81 +1,141 @@
 # EcoFlow Smart Charge
 
-Native Home Assistant integration that charges one or more EcoFlow batteries (up to 10) from the grid when published electricity prices make it worthwhile. It works through entities supplied by an existing EcoFlow integration: no new EcoFlow cloud connection, account or credentials. Domain: `ecoflow_smart_charge`.
+A Home Assistant integration that charges EcoFlow STREAM batteries from the grid **only when it pays off** — and only as much as the sun will not fill tomorrow.
 
-## Planning model
+- Charges in the best-price window when the saving beats your thresholds.
+- Leaves room for the expected PV surplus, so the batteries reach 100 % with the sun, not the grid.
+- Works through your existing EcoFlow integration: no extra cloud account, no helpers to create.
 
-- Read only the selected net grid-energy meter; no substitute or merged meter histories.
-- Reconstruct hourly household load as grid net energy + measured PV − all battery charge energies + all battery discharge energies. Use the last 14 completed local days, exclude today, normalize Wh/kWh and require at least three valid observations in each local hour; DST is elapsed-time aware.
-- Battery capacity comes from the EcoFlow device model (STREAM Ultra/Pro/Max/AC/AC Pro 1.92 kWh, Ultra X 3.84 kWh); unknown models use the fallback capacity setting.
-- Charge from the grid only what the expected PV surplus of the solar day cannot fill: grid energy = missing energy − PV surplus. The batteries sync one shared backup reserve, so the planner computes a single whole-percent reserve (e.g. 74% instead of 100%) whose grid charge covers that gap; batteries already above it are left to PV. No grid charging when the surplus alone suffices. Because forecasts update every quarter hour, a running session follows the newest target once it moves by at least 2 percentage points. Once the grid share is reached the session holds the reserve at the lowest battery level until the best-price window ends, so the house runs on cheap grid power and the stored energy is kept for later; PV may still charge on top. The best-price window may lie at night or around noon; at noon the remaining PV surplus of the same day is used.
-- Distribute published solar forecasts by the historical PV profile. Learn a correction from up to 14 valid completed-day actual/forecast ratios, without overwriting unevaluated probes on restart.
-- Use only actually published quarter-hour prices for the selected tariff. Tomorrow's prices appear around 13:00; before that, consumption after midnight earns no saving in the projection (lower coverage, never a price gap), so a late-morning or noon window is judged on today's evening prices. Price gaps, stale inputs, unavailable devices, missing protection modes and an inactive best-price window block charging.
-- Compare the unrounded advantage `(avoided_price - current_price) / avoided_price * 100` against the minimum price advantage (default 20%). Efficiency, wear, weighted future consumption and known price coverage affect the projected net saving. These are model estimates, not guaranteed savings.
+Domain: `ecoflow_smart_charge` · MIT license
 
-## Safety
+---
 
-- Before the first command, the original reserve of every battery is saved durably. The integration is the sole writer and serializes every command. The batteries sync one reserve, so only the system master (the battery with a *Power Sys Load* above 0) is commanded; the slaves' fresh reports confirm it. A service acknowledgement is not confirmation. A restore whose value never changed during the session is accepted after a 2-minute sync grace, since EcoFlow reports only changes.
-- Reserves are never set below the user's own value. The current target is stored with the session and survives restarts.
-- When charging is no longer allowed (window ended, price, master switch off, batteries full), the saved reserves are restored and read back. Only completely full batteries set the solar-day marker; otherwise a later window of the same solar day (e.g. at noon after a night session) may top up again. A pending session and the solar-day full-charge marker survive restarts.
-- Unknown or stale sources block charging, as does any battery whose Self-powered operating mode is off in active mode (shadow mode plans without it). The integration never changes the battery operating mode to obtain permission to charge.
+## Requirements
 
-## Modes and controls
-
-| Control | Purpose |
+| What | Used for |
 |---|---|
-| **Controller mode** (select) | `shadow`: calculate and display the plan, never send device commands. `active`: control the battery reserves. New entries start in `shadow`; the selected mode is kept across restarts. |
-| **Price charging enabled** (switch) | Master permission. Off blocks new charging and restores the saved reserves of a running session. |
-| Numbers | Minimum price advantage, charge price ceiling, efficiency, wear cost, minimum net saving, fallback capacity for unknown models. |
-| **Recalculate plan** (button / `ecoflow_smart_charge.recalculate`) | Refresh the sources and evaluate immediately. Requires `config_entry_id`. |
+| Home Assistant **2026.10.1+** with Recorder | history for the household load profile |
+| [EcoFlow Cloud](https://github.com/tolwi/hassio-ecoflow-cloud) (`ecoflow_cloud`) | 1–10 STREAM batteries and the Smart Meter |
+| Forecast.Solar | PV forecast today and tomorrow |
+| Tibber + [Tibber Prices](https://github.com/jpawlowski/hass.tibber_prices) (`tibber_prices`) | published quarter-hour prices, current price, best-price window |
 
-Switching from `active` to `shadow` first restores the reserves of a running session. If a readback is still outstanding, the session stays pending in shadow; switch back to `active` to finish the restoration. The planner runs every quarter hour, a safety check runs every minute, and source state changes trigger a refresh.
+Every battery must be in **Self-powered** mode for active charging. The integration never changes the operating mode itself.
+
+## Installation
+
+1. **HACS** → Custom repositories → add `mischiminator/ha-ecoflow-smart-charge` (category *Integration*) → download.
+2. Restart Home Assistant.
+3. **Settings → Devices & services → Add integration → EcoFlow Smart Charge.**
+4. Pick:
+   - the EcoFlow batteries and the Smart Meter,
+   - the Forecast.Solar and Tibber Prices entries,
+   - the Tibber home,
+   - optionally an existing PV energy sensor (see [PV energy](#pv-energy)).
+
+   Unique candidates are preselected. All entities are found automatically from these devices and entries; renamed entities are followed on reload.
+
+## First steps
+
+1. New entries start in **shadow** mode: the plan is calculated and shown, but no device is ever commanded.
+2. Watch the plan on the [dashboard card](#dashboard-card) for a few days.
+3. When it looks right: set every battery to **Self-powered**, switch **Controller mode** to `active` and turn on **Price charging enabled**.
+
+### PV energy
+
+| Option | Effect |
+|---|---|
+| Select an existing PV energy sensor (e.g. a Riemann sum) | Its history is used right away. |
+| Leave it empty | The integration creates its own **PV energy** sensor from the batteries' PV power. The load profile needs about three days of history before planning starts. |
 
 ## Dashboard card
 
-The integration ships its own Lovelace card and loads it automatically — no resource to add. Add **EcoFlow Smart Charge** from the card picker or use:
+The card ships with the integration and loads automatically — no resource to add. Pick **EcoFlow Smart Charge** in the card picker, or:
 
 ```yaml
 type: custom:ecoflow-smart-charge-card
 # device_id: only needed with more than one EcoFlow Smart Charge entry
 ```
 
-The card finds the entry's entities through its service device and shows status and reason, the charge target, current price, solar surplus, net saving, planned grid charge, the current or next best-price window, the capacity-weighted total level and every battery with its reserve (tap for history). The gear opens a dialog for the master switch, controller mode and all numbers; every change is read back from Home Assistant before it counts as saved. Texts follow the Home Assistant language (German or English).
+It shows status and reason, the charge target, price, solar surplus, net saving, the planned grid charge, the current or next best-price window, the total and per-battery level (tap for history). The gear opens the settings; every change is read back from Home Assistant before it counts as saved. German and English.
 
-## Requirements
+## Controls
 
-Home Assistant 2026.10.1 or newer (Python ≥ 3.14.2) with Recorder and these integrations — no template, `input_*` or other helpers need to be created:
+| Entity | Purpose |
+|---|---|
+| **Controller mode** (select) | `shadow` plans only · `active` controls the reserves |
+| **Price charging enabled** (switch) | Master permission. Off stops new charging and restores the saved reserves. |
+| **Recalculate plan** (button) | Plan now (also `ecoflow_smart_charge.recalculate` with `config_entry_id`) |
+| Minimum price advantage | default 20 % |
+| Charge price ceiling | default 32 ct/kWh |
+| Minimum net saving | default 3 ct/kWh |
+| Total efficiency | default 0.85 |
+| Wear cost | default 2 ct/kWh |
+| Fallback capacity | for battery models without a known capacity (default 1.92 kWh) |
 
-- **EcoFlow Cloud** (`ecoflow_cloud`): one or more Stream batteries (SOC, backup reserve, Self-powered switch, charge/discharge energy, PV power) and the Smart Meter (net grid energy).
-- **Forecast.Solar**: PV forecast today, remaining today and tomorrow.
-- **Tibber** (`tibber.get_prices`) and **Tibber Prices** (`tibber_prices`): published quarter-hour prices, current price and best-price period.
-- The built-in `sun.sun`.
+Key sensors: **Decision reason**, **Grid charge target**, **Grid charge energy**, **Missing energy**, **Solar surplus**, **Net saving**, **Price advantage**, **PV correction**.
 
-PV energy: select an existing Riemann-sum PV energy sensor to keep its history (a single `integration` sensor with "pv" in its name is suggested). Leave it empty and the integration creates its own **PV energy** sensor, integrating the batteries' PV power once a minute; the load profile then needs at least three days of its history.
+## How it decides
 
-## Installation
+Every quarter hour:
 
-1. In HACS, open Custom repositories, add `mischiminator/ha-ecoflow-smart-charge` with category Integration, and download it.
-2. Restart Home Assistant, then go to Settings → Devices & services → Add integration → EcoFlow Smart Charge.
-3. Select the EcoFlow batteries (all found batteries are preselected), the Smart Meter, the Forecast.Solar and Tibber Prices entries, optionally an existing PV energy sensor, and the Tibber home. Unique candidates are preselected; all entities are resolved from the devices and entries, and entity renames are followed on reload.
-4. Check the plan in `shadow` mode, then switch **Controller mode** to `active` and turn on **Price charging enabled**.
+1. **Load profile** – average household load per hour over the last 14 days, from the grid meter, PV and battery energy.
+2. **Solar surplus** – the Forecast.Solar forecast, spread over the day by your PV profile and corrected by a learned factor, minus the expected load.
+3. **Grid share** – energy missing to 100 % minus the solar surplus. If the sun covers it, nothing is charged.
+4. **Charge target** – one shared reserve for all batteries (they sync it), e.g. 74 % instead of 100 %. Capacity per battery comes from the model: STREAM 1.92 kWh, Ultra X 3.84 kWh.
+5. **Economics** – charging must happen inside the best-price window, below the price ceiling, with at least the minimum price advantage and net saving against the later grid price it replaces.
 
-## Local checks
+While a session runs, the target follows new forecasts (from 2 percentage points). Once the grid share is reached, the reserve is held until the best-price window ends, so the house runs on cheap grid power. Windows at night and around noon both work.
 
-    uv venv --python 3.14.7 .venv
-    uv pip sync --python .venv/bin/python --require-hashes requirements-test.lock
-    uv pip install --python .venv/bin/python -r requirements-lint.txt
-    .venv/bin/python tools/run_tests.py
-    .venv/bin/python -m ruff check .
-    .venv/bin/python -m ruff format --check .
+> Example: 3 × 1.92 kWh at 20 %, 2.6 kWh solar surplus expected → 2.0 kWh from the grid → target **55 %**; the sun does the rest.
 
-The test runner disables IP sockets (local Unix sockets are allowed for HA). CI additionally runs hassfest and the HACS action; it never deploys or exercises hardware.
+**Prices:** only published prices count. Tomorrow's prices appear around 13:00; until then a window is judged on today's remaining prices.
 
-## Releases
+**PV learning:** each day's forecast is compared with the measured PV energy; the median of up to 14 ratios corrects future forecasts (after three days).
 
-Bump `version` in `custom_components/ecoflow_smart_charge/manifest.json` and `pyproject.toml`, add a `## [X.Y.Z]` section to `CHANGELOG.md`, merge, then push the tag `vX.Y.Z`. The release workflow reruns the full validation, checks tag, versions and changelog, and publishes the GitHub release with that section as notes and `ecoflow_smart_charge.zip` attached. HACS picks the release up automatically.
+## Safety
 
-## Privacy
+- **Original reserves first.** They are saved durably before any command and restored when charging ends.
+- **Never below your own value.** A reserve is never set below what you had configured.
+- **Confirmed by the devices.** Only the system master (the battery with a *Power Sys Load* above 0) is commanded; the slaves' reports of the synced value confirm it. A service acknowledgement is not enough.
+- **Fails closed.** Stale or unknown data, a missing Self-powered mode (active only), the master switch or the end of the window stop charging and restore the reserves.
+- **Survives restarts.** A running session, its target and the "full today" marker are kept.
+- **Shadow is harmless.** It never sends device commands; switching to shadow first restores a running session.
 
-Do not commit real entity mappings, household histories, tokens, serials, Home Assistant URLs or diagnostic exports. Diagnostics contain only mode, status and recovery state, never entity IDs.
+## Troubleshooting
 
-MIT license; see LICENSE. No affiliation with or endorsement by EcoFlow, Tibber, Home Assistant or HACS is implied.
+The **Decision reason** sensor says why the integration charges or not. When a source blocks planning, its `detail` attribute names it (e.g. `source_stale: sensor.…`), and the card shows it.
+
+| Reason | Meaning |
+|---|---|
+| `eligible` | Charging allowed |
+| `target_reached` | Grid share charged; reserve held until the window ends |
+| `outside_best_price_window` | Waiting for the next best-price window |
+| `solar_surplus_sufficient` | The sun will fill the batteries |
+| `price_advantage_too_low` / `net_saving_too_low` | Not worth it at the current price |
+| `price_above_ceiling` | Price above your ceiling |
+| `batteries_full` / `already_full_for_solar_day` | Nothing to do |
+| `protection_mode_required` | Active mode needs every battery in Self-powered mode |
+| `profile_invalid` | Not enough history yet (3 values per hour) |
+| `source_missing` | A source is unavailable or stale — see `detail` |
+
+Diagnostics contain only mode, status and recovery state, never entity IDs.
+
+---
+
+## Development
+
+```bash
+uv venv --python 3.14.7 .venv
+uv pip sync --python .venv/bin/python --require-hashes requirements-test.lock
+uv pip install --python .venv/bin/python -r requirements-lint.txt
+.venv/bin/python tools/run_tests.py
+.venv/bin/python -m ruff check . && .venv/bin/python -m ruff format --check .
+```
+
+Tests run offline (IP sockets disabled). CI also runs hassfest and the HACS action.
+
+**Releases:** bump `version` in `manifest.json` and `pyproject.toml`, add a `## [X.Y.Z]` section to [CHANGELOG.md](CHANGELOG.md), merge, push tag `vX.Y.Z`. The release workflow validates everything again and publishes the release with `ecoflow_smart_charge.zip`.
+
+**Privacy:** never commit real entity mappings, household histories, tokens, serials, Home Assistant URLs or diagnostic exports.
+
+MIT license, see [LICENSE](LICENSE). Not affiliated with or endorsed by EcoFlow, Tibber, Home Assistant or HACS.
