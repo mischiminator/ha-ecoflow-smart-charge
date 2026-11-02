@@ -9,7 +9,11 @@ from uuid import uuid4
 
 from homeassistant.exceptions import HomeAssistantError
 
+from .planner.core import MAX_BATTERIES
 from .storage import finite
+
+# Forecasts move every quarter hour; smaller target changes are not worth a command.
+RETARGET_POINTS = 2.0
 
 
 class Runtime:
@@ -60,8 +64,8 @@ class Runtime:
 
     def _mapping_valid(self):
         return (
-            len(self.writers) == 3
-            and len(set(self.writers)) == 3
+            1 <= len(self.writers) <= MAX_BATTERIES
+            and len(set(self.writers)) == len(self.writers)
             and (
                 self.journal.record is None
                 or set(self.journal.record.reserves_before) == set(self.writers)
@@ -136,6 +140,24 @@ class Runtime:
         # Even an ACK with synchronous state update is only confirmed on next observation.
         return False
 
+    def _charge_targets(self):
+        record = self.journal.record
+        return dict(record.charge_targets) or {e: 100.0 for e in record.reserves_before}
+
+    async def _continue_charge(self, gate):
+        """Follow the latest plan's shared target; reserves never drop below the originals."""
+        current = self._charge_targets()
+        originals = self.journal.record.reserves_before
+        try:
+            planned = gate["targets"]
+            wanted = {e: max(finite(planned[e], 3), originals[e]) for e in originals}
+        except KeyError, TypeError, ValueError:
+            wanted = current
+        if any(abs(wanted[e] - current[e]) >= RETARGET_POINTS for e in originals):
+            await self.journal.async_set_charge_targets(wanted)
+            current = wanted
+        return await self._execute(current, restore=False)
+
     async def _charge_allowed(self):
         gate = await self._gate()
         return all(gate.get(k) for k in ("valid", "allowed", "master"))
@@ -164,12 +186,17 @@ class Runtime:
             return False
         try:
             originals = {e: finite(v, 3) for e, v in reserves_before.items()}
-        except ValueError:
+            planned = gate.get("targets") or dict.fromkeys(originals, 100.0)
+            # Never lower a reserve below the user's own setting while charging.
+            targets = {e: max(finite(planned[e], 3), originals[e]) for e in originals}
+        except KeyError, TypeError, ValueError:
+            return False
+        if all(targets[e] <= originals[e] for e in originals):
             return False
         await self.journal.async_capture_before_command(
-            uuid4().hex, originals, {e: 100.0 for e in originals}, solar_day=gate.get("solar_day")
+            uuid4().hex, originals, targets, solar_day=gate.get("solar_day")
         )
-        return await self._execute({e: 100.0 for e in originals}, restore=False)
+        return await self._execute(targets, restore=False)
 
     async def async_retry_charge(self):
         async with self._lock:
@@ -180,7 +207,7 @@ class Runtime:
                 "charging",
             ):
                 return False
-            result = await self._execute({e: 100.0 for e in record.reserves_before}, restore=False)
+            result = await self._execute(self._charge_targets(), restore=False)
             self.notify()
             return result
 
@@ -218,7 +245,7 @@ class Runtime:
                 ):
                     await self._restore()
                 elif record:
-                    await self._execute({e: 100.0 for e in record.reserves_before}, restore=False)
+                    await self._continue_charge(gate)
                 else:
                     await self._start(None)
             self.notify()

@@ -26,7 +26,6 @@ async def test_entry_setup_is_shadow_by_default_and_registers_targeted_service(
             "soc_entities": ["sensor.soc_1", "sensor.soc_2", "sensor.soc_3"],
             "reserve_entities": ["number.reserve_1", "number.reserve_2", "number.reserve_3"],
             "self_powered_entities": ["switch.self_1", "switch.self_2", "switch.self_3"],
-            "operating_mode_entities": ["select.mode_1", "select.mode_2", "select.mode_3"],
         },
     )
     entry.add_to_hass(hass)

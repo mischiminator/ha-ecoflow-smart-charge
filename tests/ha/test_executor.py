@@ -145,3 +145,55 @@ async def test_unconfirmed_command_retries_are_rate_limited():
     await runtime.async_retry_charge()
     assert len(calls) == 3
     assert runtime.journal.record.phase == "charge_pending"
+
+
+@pytest.mark.asyncio
+async def test_shared_target_is_persisted_and_never_lowers_a_reserve():
+    runtime, disk, values, stamps, _calls, gate = await rig()
+    gate["targets"] = dict.fromkeys(values, 11.0)
+    originals = dict(values)
+    assert not await runtime.async_start(originals)
+    # slot_2 keeps its higher original reserve instead of the lower shared target.
+    expected = {"number.slot_0": 11.0, "number.slot_1": 11.0, "number.slot_2": 12}
+    assert runtime.journal.record.charge_targets == expected
+    assert disk.data["session"]["charge_targets"] == expected
+    for e, target in expected.items():
+        values[e], stamps[e] = target, datetime.now(UTC)
+    assert await runtime.async_retry_charge()
+    assert runtime.status == "charging"
+    # The window ends before the batteries are full: restore, but no solar-day marker,
+    # so a later cheap window (e.g. at noon) may still top up.
+    gate["allowed"] = False
+    await runtime.async_recalculate()
+    assert runtime.journal.record.phase == "restore_pending"
+    assert runtime.journal.full_marker_day is None
+
+
+@pytest.mark.asyncio
+async def test_running_session_follows_forecast_with_hysteresis():
+    runtime, disk, values, _stamps, calls, gate = await rig()
+    gate["targets"] = dict.fromkeys(values, 60.0)
+    assert not await runtime.async_start(dict(values))
+    calls.clear()
+    # A one-point forecast wobble is not worth a device command.
+    gate["targets"] = dict.fromkeys(values, 61.0)
+    await runtime.async_recalculate()
+    assert set(runtime.journal.record.charge_targets.values()) == {60.0}
+    # A real change raises (or lowers) the shared reserve on every battery.
+    gate["targets"] = dict.fromkeys(values, 70.0)
+    await runtime.async_recalculate()
+    assert set(runtime.journal.record.charge_targets.values()) == {70.0}
+    assert sorted(calls) == [(e, 70.0) for e in sorted(values)]
+    assert disk.data["session"]["charge_targets"] == dict.fromkeys(values, 70.0)
+    calls.clear()
+    gate["targets"] = dict.fromkeys(values, 40.0)
+    await runtime.async_recalculate()
+    assert sorted(calls) == [(e, 40.0) for e in sorted(values)]
+
+
+@pytest.mark.asyncio
+async def test_no_session_when_targets_do_not_exceed_original_reserves():
+    runtime, _, values, _, calls, gate = await rig()
+    gate["targets"] = dict.fromkeys(values, 5.0)
+    assert not await runtime.async_start(dict(values))
+    assert calls == [] and runtime.journal.record is None

@@ -110,9 +110,30 @@ class PolicyTests(unittest.TestCase):
         self.assertFalse(result.allowed)
         self.assertEqual(result.reason, "price_advantage_too_low")
 
-    def test_active_session_does_not_stop_only_because_solar_can_now_fill(self) -> None:
-        result = decide(valid_input(active_session=True, forecast_today=100.0))
+    def test_active_session_holds_once_solar_can_fill_the_rest(self) -> None:
+        batteries = (Battery(soc=61.7, reserve=3),) * 3
+        result = decide(
+            valid_input(
+                active_session=True,
+                batteries=batteries,
+                profile=solar_profile(),
+                forecast_today=100.0,
+            )
+        )
         self.assertTrue(result.allowed)
+        self.assertEqual(result.reason, "target_reached")
+        # Hold the stored energy for the expensive hours instead of discharging now.
+        self.assertEqual(result.target_soc, 61.0)
+        ended = decide(
+            valid_input(
+                active_session=True,
+                batteries=batteries,
+                profile=solar_profile(),
+                forecast_today=100.0,
+                best_price_window=False,
+            )
+        )
+        self.assertEqual(ended.reason, "outside_best_price_window")
 
     def test_stale_or_invalid_sources_fail_closed(self) -> None:
         result = decide(valid_input(sources_fresh=False))
@@ -137,3 +158,107 @@ class LearningTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BatteryCountTests(unittest.TestCase):
+    def test_any_battery_count_plans_and_scales_missing_energy(self) -> None:
+        one = decide(valid_input(batteries=(Battery(soc=50, reserve=3),)))
+        four = decide(valid_input(batteries=(Battery(soc=50, reserve=3),) * 4))
+        self.assertNotEqual(one.reason, "battery_data_invalid")
+        self.assertNotEqual(four.reason, "battery_data_invalid")
+        self.assertAlmostEqual(four.missing_energy_kwh, 4 * one.missing_energy_kwh)
+        self.assertEqual(decide(valid_input(batteries=())).reason, "battery_data_invalid")
+
+    def test_profile_accepts_one_battery_rows_and_rejects_mismatched_lists(self) -> None:
+        rows = [{**r, "charges": (0.3,), "discharges": (0.6,)} for r in complete_rows()]
+        single = build_hourly_profile(rows)
+        self.assertTrue(single.valid)
+        three = build_hourly_profile(complete_rows())
+        for a, b in zip(single.house_by_hour, three.house_by_hour, strict=True):
+            self.assertAlmostEqual(a, b)
+        broken = [{**r, "discharges": (0.6, 0.0)} for r in rows]
+        self.assertFalse(build_hourly_profile(broken).valid)
+
+
+class SolarTargetTests(unittest.TestCase):
+    def test_grid_charges_only_the_gap_that_pv_surplus_cannot_fill(self) -> None:
+        batteries = (Battery(soc=20, reserve=3, capacity_kwh=1.92),) * 2 + (
+            Battery(soc=50, reserve=3, capacity_kwh=3.84),
+        )
+        none = decide(valid_input(batteries=batteries))
+        self.assertEqual(none.target_soc, 100.0)
+        self.assertAlmostEqual(none.grid_kwh, none.missing_energy_kwh)
+        self.assertAlmostEqual(none.missing_energy_kwh, 2 * 1.92 * 0.8 + 3.84 * 0.5)
+        some = decide(valid_input(batteries=batteries, profile=solar_profile(), forecast_today=12))
+        self.assertTrue(0 < some.solar_surplus_kwh < some.missing_energy_kwh)
+        self.assertAlmostEqual(some.grid_kwh, some.missing_energy_kwh - some.solar_surplus_kwh)
+        # One shared reserve: its grid charge covers the gap, one percent less would not.
+        target = some.target_soc
+        self.assertEqual(target, int(target))
+        self.assertTrue(50 < target < 100)
+
+        def charged(level):
+            return sum((b.capacity_kwh or 0) * max(level - b.soc, 0) / 100 for b in batteries)
+
+        self.assertGreaterEqual(charged(target), some.grid_kwh)
+        self.assertLess(charged(target - 1), some.grid_kwh)
+        self.assertLess(some.target_ac_kwh, none.target_ac_kwh)
+
+    def test_shared_target_can_leave_fuller_batteries_to_pv(self) -> None:
+        batteries = (Battery(10, 3, 1.92), Battery(90, 3, 1.92))
+        result = decide(
+            valid_input(batteries=batteries, profile=solar_profile(), forecast_today=12)
+        )
+        self.assertTrue(result.allowed)
+        self.assertLess(result.target_soc, 90)
+        self.assertGreater(result.target_soc, 10)
+
+    def test_unknown_model_capacity_uses_configured_fallback(self) -> None:
+        mixed = decide(
+            valid_input(
+                batteries=(Battery(50, 3, 3.84), Battery(50, 3)),
+                capacity_kwh=1.0,
+            )
+        )
+        self.assertAlmostEqual(mixed.missing_energy_kwh, 3.84 * 0.5 + 1.0 * 0.5)
+        bad = decide(valid_input(batteries=(Battery(50, 3, 0.0),)))
+        self.assertEqual(bad.reason, "battery_data_invalid")
+
+
+def solar_profile():
+    rows = [{**r, "pv": 0.6 if 8 <= r["start"].hour <= 16 else 0.0} for r in complete_rows()]
+    return build_hourly_profile(rows)
+
+
+class MiddayWindowTests(unittest.TestCase):
+    """Tomorrow's prices appear around 13:00; a late-morning window only knows today's."""
+
+    def midday(self, batteries):
+        now = datetime(2026, 1, 4, 11, tzinfo=UTC)
+        quarters = int((datetime(2026, 1, 5, tzinfo=UTC) - now).total_seconds() // 900)
+        prices = tuple(
+            PricePoint(now + timedelta(minutes=15 * i), 10.0 if i < 8 else 40.0)
+            for i in range(quarters)
+        )
+        return decide(
+            valid_input(
+                now=now,
+                price_series_updated=now,
+                sunset=now + timedelta(hours=5),
+                prices=prices,
+                batteries=batteries,
+                profile=solar_profile(),
+                forecast_today=4,
+            )
+        )
+
+    def test_today_prices_suffice_when_evening_covers_the_charge(self) -> None:
+        result = self.midday((Battery(20, 3, 1.92),) * 3)
+        self.assertTrue(result.allowed)
+        self.assertEqual(result.coverage_fraction, 1.0)
+
+    def test_consumption_after_last_published_price_is_not_counted(self) -> None:
+        result = self.midday((Battery(5, 3, 3.84),) * 10)
+        self.assertNotEqual(result.reason, "price_gap")
+        self.assertLess(result.coverage_fraction, 1.0)
+        self.assertLess(result.coverage_kwh, result.target_ac_kwh)

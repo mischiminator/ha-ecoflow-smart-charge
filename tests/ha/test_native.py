@@ -32,7 +32,6 @@ def mapping(hass):
         "soc_entities": ("sensor", "soc", "50", "%"),
         "reserve_entities": ("number", "reserve", "11", "%"),
         "self_powered_entities": ("switch", "self", "on", None),
-        "operating_mode_entities": ("select", "mode", "self_powered", None),
         "charge_energy_entities": ("sensor", "charge", "1", "kWh"),
         "discharge_energy_entities": ("sensor", "discharge", "1", "kWh"),
     }
@@ -56,14 +55,88 @@ def mapping(hass):
     return data
 
 
+def selection(hass, *, pv="sensor.pv_riemann", prefix="BAT", batteries=3, models=None):
+    """Registry-backed EcoFlow, Forecast.Solar and Tibber Prices sources as the flow sees them."""
+    from homeassistant.helpers import device_registry as dr
+
+    from custom_components.ecoflow_smart_charge.sources import BATTERY, FORECAST, METER, PRICES
+
+    devices, entities = dr.async_get(hass), er.async_get(hass)
+    providers = {}
+    for domain in ("ecoflow_cloud", "forecast_solar", "tibber_prices"):
+        providers[domain] = MockConfigEntry(domain=domain)
+        providers[domain].add_to_hass(hass)
+    eco = providers["ecoflow_cloud"]
+    states = {
+        "soc_entities": ("50", "%"),
+        "reserve_entities": ("11", "%"),
+        "self_powered_entities": ("on", None),
+        "charge_energy_entities": ("1", "kWh"),
+        "discharge_energy_entities": ("1", "kWh"),
+        "pv_power_entities": ("120", "W"),
+    }
+
+    def device(serial, specs, model=None):
+        device_id = devices.async_get_or_create(
+            config_entry_id=eco.entry_id, identifiers={("ecoflow_cloud", serial)}, model=model
+        ).id
+        for domain, suffix, value, unit in specs:
+            entity = entities.async_get_or_create(
+                domain,
+                "ecoflow_cloud",
+                f"ecoflow-api-{serial}{suffix}",
+                device_id=device_id,
+                config_entry=eco,
+            ).entity_id
+            hass.states.async_set(entity, value, {"unit_of_measurement": unit} if unit else {})
+        return device_id
+
+    models = models or ["Stream Ultra"] * batteries
+    batteries = [
+        device(f"{prefix}{i}", [(*BATTERY[key], *states[key]) for key in BATTERY], models[i])
+        for i in range(batteries)
+    ]
+    meter = device(f"{prefix}METER", [(*METER, "1", "kWh")])
+    for platform, keys, value, unit in (
+        ("forecast_solar", FORECAST, "1", "kWh"),
+        ("tibber_prices", PRICES, None, None),
+    ):
+        provider = providers[platform]
+        for key, (domain, suffix) in keys.items():
+            entity = entities.async_get_or_create(
+                domain, platform, f"{provider.entry_id}_{suffix}", config_entry=provider
+            ).entity_id
+            if key == "price_entity":
+                hass.states.async_set(entity, "21.5", {"unit_of_measurement": "ct/kWh"})
+            elif key == "price_window_entity":
+                hass.states.async_set(entity, "on")
+            else:
+                hass.states.async_set(entity, value, {"unit_of_measurement": unit})
+    hass.states.async_set("sun.sun", "above_horizon", {"next_setting": "2026-10-15T20:00:00+00:00"})
+    result = {
+        "name": "Synthetic controller",
+        "battery_devices": batteries,
+        "meter_device": meter,
+        "forecast_entry": providers["forecast_solar"].entry_id,
+        "prices_entry": providers["tibber_prices"].entry_id,
+        "tariff_key": "Synthetic",
+    }
+    if pv:
+        hass.states.async_set(pv, "941.9", {"unit_of_measurement": "kWh"})
+        result["pv_entity"] = pv
+    return result
+
+
 @pytest.mark.usefixtures("enable_custom_integrations")
 async def test_valid_flow_starts_in_shadow_and_options_select_mode(hass):
-    data = mapping(hass)
     result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": "user"}, data=data
+        DOMAIN, context={"source": "user"}, data=selection(hass)
     )
     assert result["type"] == "create_entry"
     entry = result["result"]
+    assert entry.data["pv_entity"] == "sensor.pv_riemann"
+    assert entry.data["sun_entity"] == "sun.sun"
+    assert len(set(entry.data["reserve_entities"])) == 3
     await hass.async_block_till_done()
     assert entry.runtime_data.mode == "shadow"
     options = await hass.config_entries.options.async_init(entry.entry_id)

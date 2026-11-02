@@ -81,3 +81,17 @@ async def test_recorder_query_real_populated_sqlite(recorder_mock, hass):
     )
     assert len(rows) == 4
     assert all(row["grid"] == 1.0 for row in rows)
+
+
+async def test_join_splits_any_battery_count():
+    from custom_components.ecoflow_smart_charge.reader import join_statistics
+
+    for batteries in (1, 4):
+        keys = [f"sensor.stream_{i}" for i in range(2 + 2 * batteries)]
+        raw = {k: [{"start": 1767528000.0, "change": float(i)}] for i, k in enumerate(keys)}
+        row = join_statistics(raw, keys, ZoneInfo("Europe/Berlin"))[0]
+        assert row["charges"] == tuple(float(i) for i in range(2, 2 + batteries))
+        assert row["discharges"] == tuple(float(i) for i in range(2 + batteries, len(keys)))
+    for keys in (["sensor.grid", "sensor.pv"], ["sensor.grid", "sensor.pv", "sensor.charge"]):
+        with pytest.raises(ValueError):
+            join_statistics({}, keys, ZoneInfo("Europe/Berlin"))

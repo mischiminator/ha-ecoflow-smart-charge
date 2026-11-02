@@ -4,54 +4,43 @@
     "step": {
       "user": {
         "title": "EcoFlow Smart Charge",
-        "description": "Select existing entities. No cloud credentials. Use identical slot order in all battery lists. New entries start in shadow mode.",
+        "description": "Select the EcoFlow devices and the provider entries; all entities are found automatically. No cloud credentials. New entries start in shadow mode.",
         "data": {
           "name": "Name",
-          "grid_energy_entity": "Required net grid energy meter",
-          "price_entity": "Current published electricity price",
-          "price_window_entity": "Best-price window",
-          "pv_entity": "Measured PV energy",
-          "soc_entities": "Three battery SOC sensors (slot order)",
-          "reserve_entities": "Three reserve numbers (same slot order)",
-          "self_powered_entities": "Three Self-powered switches (same slot order)",
-          "operating_mode_entities": "Three operating-mode selects (same slot order)",
-          "forecast_today_entity": "Total PV forecast today",
-          "forecast_remaining_entity": "Remaining PV forecast today",
-          "forecast_tomorrow_entity": "Total PV forecast tomorrow",
-          "sun_entity": "Sun state",
-          "charge_energy_entities": "Three charge energy sources (slot order)",
-          "discharge_energy_entities": "Three discharge energy sources (slot order)",
-          "tariff_key": "Explicit tariff/home key"
+          "battery_devices": "EcoFlow batteries (1 or more)",
+          "meter_device": "EcoFlow Smart Meter (net grid energy)",
+          "forecast_entry": "Forecast.Solar entry",
+          "prices_entry": "Tibber Prices entry",
+          "pv_entity": "Existing PV energy meter (optional)",
+          "tariff_key": "Tibber home"
+        },
+        "data_description": {
+          "pv_entity": "Keeps the history of an existing Riemann-sum PV sensor. Leave empty to let the integration integrate the batteries' PV power itself (the load profile needs a few days of history first)."
         }
       },
       "reconfigure": {
         "title": "Reconfigure sources",
-        "description": "Only without a pending session. Preserve slot order.",
+        "description": "Only without a pending session.",
         "data": {
           "name": "Name",
-          "grid_energy_entity": "Required net grid energy meter",
-          "price_entity": "Current published electricity price",
-          "price_window_entity": "Best-price window",
-          "pv_entity": "Measured PV energy",
-          "soc_entities": "Three battery SOC sensors (slot order)",
-          "reserve_entities": "Three reserve numbers (same slot order)",
-          "self_powered_entities": "Three Self-powered switches (same slot order)",
-          "operating_mode_entities": "Three operating-mode selects (same slot order)",
-          "forecast_today_entity": "Total PV forecast today",
-          "forecast_remaining_entity": "Remaining PV forecast today",
-          "forecast_tomorrow_entity": "Total PV forecast tomorrow",
-          "sun_entity": "Sun state",
-          "charge_energy_entities": "Three charge energy sources (slot order)",
-          "discharge_energy_entities": "Three discharge energy sources (slot order)",
-          "tariff_key": "Explicit tariff/home key"
+          "battery_devices": "EcoFlow batteries (1 or more)",
+          "meter_device": "EcoFlow Smart Meter (net grid energy)",
+          "forecast_entry": "Forecast.Solar entry",
+          "prices_entry": "Tibber Prices entry",
+          "pv_entity": "Existing PV energy meter (optional)",
+          "tariff_key": "Tibber home"
+        },
+        "data_description": {
+          "pv_entity": "Keeps the history of an existing Riemann-sum PV sensor. Leave empty to let the integration integrate the batteries' PV power itself (the load profile needs a few days of history first)."
         }
       }
     },
     "error": {
-      "three_batteries_required": "Select exactly three entities in each battery list.",
-      "duplicate_reserves": "Each entity in a battery list must be distinct.",
+      "battery_count_invalid": "Select at least one EcoFlow battery (at most 10), each only once.",
+      "duplicate_reserves": "Each battery entity must be distinct.",
       "source_invalid": "Missing, unavailable, wrong or duplicate source, or empty tariff key.",
-      "unit_invalid": "Source unit or value is invalid."
+      "unit_invalid": "Source unit or value is invalid.",
+      "device_entities_missing": "A selected device or entry lacks a required entity (SOC, reserve, Self-powered, charge/discharge energy, PV power, grid energy, forecast, price or best-price window), or it is disabled."
     },
     "abort": {
       "already_configured": "At least one reserve target is already owned by another entry.",
@@ -72,7 +61,7 @@
           "efficiency": "Total efficiency (fraction 0..1)",
           "wear_cost_ct": "Wear (ct/kWh delivered)",
           "minimum_net_saving_ct": "Minimum net saving (ct/kWh delivered)",
-          "capacity_kwh": "Capacity per battery (kWh)"
+          "capacity_kwh": "Fallback capacity per battery (unknown models, kWh)"
         }
       }
     },
@@ -135,6 +124,15 @@
       },
       "corrected_forecast_kwh": {
         "name": "Corrected solar forecast"
+      },
+      "pv_energy": {
+        "name": "PV energy"
+      },
+      "grid_kwh": {
+        "name": "Grid charge energy"
+      },
+      "target_soc": {
+        "name": "Grid charge target"
       }
     },
     "binary_sensor": {
@@ -171,7 +169,7 @@
         "name": "Minimum net saving"
       },
       "capacity_kwh": {
-        "name": "Capacity per battery"
+        "name": "Fallback capacity"
       }
     },
     "switch": {

@@ -10,10 +10,10 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import DOMAIN
+from .planner.core import MAX_BATTERIES
 
 SINGLES = {
     "grid_energy_entity": "sensor",
-    "pv_entity": "sensor",
     "price_entity": "sensor",
     "price_window_entity": "binary_sensor",
     "forecast_today_entity": "sensor",
@@ -25,17 +25,26 @@ TRIPLES = {
     "soc_entities": "sensor",
     "reserve_entities": "number",
     "self_powered_entities": "switch",
-    "operating_mode_entities": "select",
     "charge_energy_entities": "sensor",
     "discharge_energy_entities": "sensor",
 }
+# What the user picks; everything in SINGLES/TRIPLES is resolved from it.
+FIELDS = (
+    "name",
+    "battery_devices",
+    "meter_device",
+    "forecast_entry",
+    "prices_entry",
+    "pv_entity",
+    "tariff_key",
+)
 SETTINGS = {
     "minimum_price_advantage_percent": (20.0, 0, 100),
     "charge_ceiling_ct": (32.0, -100, 1000),
     "efficiency": (0.85, 0.01, 1),
     "wear_cost_ct": (2.0, 0, 100),
     "minimum_net_saving_ct": (3.0, 0, 1000),
-    "capacity_kwh": (2.0, 0.01, 100),
+    "capacity_kwh": (1.92, 0.01, 100),
 }
 MODES = ("shadow", "active")
 
@@ -61,22 +70,26 @@ def validate_settings(values):
 
 
 def validate_mapping(hass, data):
-    if any(len(data.get(key, [])) != 3 for key in TRIPLES):
-        return "three_batteries_required"
-    if any(len(set(data[key])) != 3 for key in TRIPLES):
+    count = len(data.get("soc_entities", []))
+    if not 1 <= count <= MAX_BATTERIES or any(len(data.get(k, [])) != count for k in TRIPLES):
+        return "battery_count_invalid"
+    if any(len(set(data[key])) != count for key in TRIPLES):
         return "duplicate_reserves"
     try:
         selected = [(data[k], domain) for k, domain in SINGLES.items()]
         selected += [(e, domain) for k, domain in TRIPLES.items() for e in data[k]]
         if not data["tariff_key"].strip():
             return "source_invalid"
+        # Without a selected PV meter the integration integrates PV power itself.
+        pv = [data["pv_entity"]] if data.get("pv_entity") else []
+        selected += [(e, "sensor") for e in pv]
         energy = [
             data["grid_energy_entity"],
-            data["pv_entity"],
+            *pv,
             *data["charge_energy_entities"],
             *data["discharge_energy_entities"],
         ]
-        if len(set(energy)) != 8:
+        if len(set(energy)) != len(energy):
             return "source_invalid"
         for entity, domain in selected:
             state = hass.states.get(entity)
@@ -113,18 +126,87 @@ def validate_mapping(hass, data):
     return None
 
 
-def mapping_schema():
-    schema = {vol.Required("name", default="EcoFlow Smart Charge"): str}
-    for key, domain in SINGLES.items():
-        schema[vol.Required(key)] = selector.EntitySelector(
-            selector.EntitySelectorConfig(domain=[domain])
+def resolve_selection(hass, user_input):
+    """Selection plus resolved entity mapping, or a form error."""
+    from .sources import SourceMissing, resolve
+
+    selection = {k: user_input[k] for k in FIELDS if user_input.get(k)}
+    devices = selection.get("battery_devices", [])
+    if not 1 <= len(set(devices)) == len(devices) <= MAX_BATTERIES:
+        return None, "battery_count_invalid"
+    try:
+        data = {**selection, **resolve(hass, selection)}
+    except KeyError, SourceMissing:
+        return None, "device_entities_missing"
+    return data, validate_mapping(hass, data)
+
+
+async def tibber_homes(hass):
+    try:
+        response = await hass.services.async_call(
+            "tibber", "get_prices", {}, blocking=True, return_response=True
         )
-    for key, domain in TRIPLES.items():
-        schema[vol.Required(key)] = selector.EntitySelector(
-            selector.EntitySelectorConfig(domain=[domain], multiple=True)
+        return sorted(response["prices"])
+    except Exception:  # noqa: BLE001 - only a suggestion source, the field stays editable
+        return []
+
+
+def _only(values):
+    return values[0] if len(values) == 1 else None
+
+
+async def suggestions(hass):
+    from .sources import (
+        BATTERY,
+        FORECAST_SOLAR,
+        METER,
+        TIBBER_PRICES,
+        ecoflow_devices,
+        provider_entries,
+        pv_energy_candidates,
+    )
+
+    homes = await tibber_homes(hass)
+    batteries = ecoflow_devices(hass, *BATTERY["reserve_entities"])
+    values = {
+        "battery_devices": batteries if len(batteries) <= MAX_BATTERIES else None,
+        "meter_device": _only(ecoflow_devices(hass, *METER)),
+        "forecast_entry": _only(provider_entries(hass, FORECAST_SOLAR)),
+        "prices_entry": _only(provider_entries(hass, TIBBER_PRICES)),
+        "pv_entity": _only(pv_energy_candidates(hass)),
+        "tariff_key": _only(homes),
+    }
+    return homes, {k: v for k, v in values.items() if v}
+
+
+def mapping_schema(homes=()):
+    from .sources import ECOFLOW, FORECAST_SOLAR, TIBBER_PRICES
+
+    def device(multiple=False):
+        return selector.DeviceSelector(
+            selector.DeviceSelectorConfig(integration=ECOFLOW, multiple=multiple)
         )
-    schema[vol.Required("tariff_key")] = str
-    return vol.Schema(schema)
+
+    def entry(integration):
+        return selector.ConfigEntrySelector(
+            selector.ConfigEntrySelectorConfig(integration=integration)
+        )
+
+    return vol.Schema(
+        {
+            vol.Required("name", default="EcoFlow Smart Charge"): str,
+            vol.Required("battery_devices"): device(multiple=True),
+            vol.Required("meter_device"): device(),
+            vol.Required("forecast_entry"): entry(FORECAST_SOLAR),
+            vol.Required("prices_entry"): entry(TIBBER_PRICES),
+            vol.Optional("pv_entity"): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="sensor", device_class="energy")
+            ),
+            vol.Required("tariff_key"): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=list(homes), custom_value=True)
+            ),
+        }
+    )
 
 
 class EcoFlowSmartChargeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -133,19 +215,26 @@ class EcoFlowSmartChargeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input=None):
         errors = {}
         if user_input is not None:
-            error = validate_mapping(self.hass, user_input)
+            data, error = resolve_selection(self.hass, user_input)
             if error:
                 errors["base"] = error
             else:
                 # Physical reserve targets, not private source IDs, determine duplicate ownership.
-                chosen = set(user_input["reserve_entities"])
+                chosen = set(data["reserve_entities"])
                 if any(
                     chosen.intersection(e.data.get("reserve_entities", []))
                     for e in self._async_current_entries()
                 ):
                     return self.async_abort(reason="already_configured")
-                return self.async_create_entry(title=user_input["name"], data=user_input)
-        return self.async_show_form(step_id="user", data_schema=mapping_schema(), errors=errors)
+                return self.async_create_entry(title=data["name"], data=data)
+        homes, suggested = await suggestions(self.hass)
+        return self.async_show_form(
+            step_id="user",
+            data_schema=self.add_suggested_values_to_schema(
+                mapping_schema(homes), user_input or suggested
+            ),
+            errors=errors,
+        )
 
     async def async_step_reconfigure(self, user_input=None):
         entry = self._get_reconfigure_entry()
@@ -165,21 +254,26 @@ class EcoFlowSmartChargeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="recovery_pending")
         errors = {}
         if user_input is not None:
-            error = validate_mapping(self.hass, user_input)
+            data, error = resolve_selection(self.hass, user_input)
             if error:
                 errors["base"] = error
             else:
-                chosen = set(user_input["reserve_entities"])
+                chosen = set(data["reserve_entities"])
                 if any(
                     e.entry_id != entry.entry_id
                     and chosen.intersection(e.data.get("reserve_entities", []))
                     for e in self._async_current_entries()
                 ):
                     return self.async_abort(reason="already_configured")
-                return self.async_update_reload_and_abort(entry, data_updates=user_input)
+                # Replace, not merge: an emptied PV field switches to the own PV sensor.
+                data["journal_initialized"] = entry.data.get("journal_initialized", False)
+                return self.async_update_reload_and_abort(entry, data=data)
+        homes, _ = await suggestions(self.hass)
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=self.add_suggested_values_to_schema(mapping_schema(), entry.data),
+            data_schema=self.add_suggested_values_to_schema(
+                mapping_schema(homes), user_input or entry.data
+            ),
             errors=errors,
         )
 

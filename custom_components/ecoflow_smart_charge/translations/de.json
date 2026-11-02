@@ -4,54 +4,43 @@
     "step": {
       "user": {
         "title": "EcoFlow Smart Charge",
-        "description": "Vorhandene Entitäten auswählen. Keine Cloud-Zugangsdaten. Alle Batterielisten müssen dieselbe Slot-Reihenfolge haben. Neue Einträge starten im Shadow-Modus.",
+        "description": "EcoFlow-Geräte und Anbieter-Einträge auswählen; alle Entitäten werden automatisch gefunden. Keine Cloud-Zugangsdaten. Neue Einträge starten im Shadow-Modus.",
         "data": {
           "name": "Name",
-          "grid_energy_entity": "Verbindlicher Netz-Saldo-Energiezähler",
-          "price_entity": "Aktueller veröffentlichter Strompreis",
-          "price_window_entity": "Bestpreis-Zeitfenster",
-          "pv_entity": "Gemessene PV-Energie",
-          "soc_entities": "Drei Batterie-Ladezustände (Slot-Reihenfolge)",
-          "reserve_entities": "Drei Reserve-Zahlen (gleiche Slot-Reihenfolge)",
-          "self_powered_entities": "Drei Eigenversorgungs-Schalter (gleiche Slot-Reihenfolge)",
-          "operating_mode_entities": "Drei Betriebsmodus-Auswahlen (gleiche Slot-Reihenfolge)",
-          "forecast_today_entity": "PV-Prognose heute gesamt",
-          "forecast_remaining_entity": "PV-Prognose heute verbleibend",
-          "forecast_tomorrow_entity": "PV-Prognose morgen gesamt",
-          "sun_entity": "Sonnenzustand",
-          "charge_energy_entities": "Drei Ladeenergie-Quellen (Slot-Reihenfolge)",
-          "discharge_energy_entities": "Drei Entladeenergie-Quellen (Slot-Reihenfolge)",
-          "tariff_key": "Expliziter Tarif-/Haushaltsschlüssel"
+          "battery_devices": "EcoFlow-Batterien (eine oder mehrere)",
+          "meter_device": "EcoFlow Smart Meter (Netz-Saldo)",
+          "forecast_entry": "Forecast.Solar-Eintrag",
+          "prices_entry": "Tibber-Prices-Eintrag",
+          "pv_entity": "Vorhandener PV-Energiezähler (optional)",
+          "tariff_key": "Tibber-Zuhause"
+        },
+        "data_description": {
+          "pv_entity": "Übernimmt den Verlauf eines vorhandenen Riemann-PV-Sensors. Leer lassen, dann integriert die Integration die PV-Leistung der Batterien selbst (das Lastprofil braucht dann erst einige Tage Verlauf)."
         }
       },
       "reconfigure": {
         "title": "Quellen neu zuordnen",
-        "description": "Nur ohne offene Sitzung. Slot-Reihenfolge beibehalten.",
+        "description": "Nur ohne offene Sitzung.",
         "data": {
           "name": "Name",
-          "grid_energy_entity": "Verbindlicher Netz-Saldo-Energiezähler",
-          "price_entity": "Aktueller veröffentlichter Strompreis",
-          "price_window_entity": "Bestpreis-Zeitfenster",
-          "pv_entity": "Gemessene PV-Energie",
-          "soc_entities": "Drei Batterie-Ladezustände (Slot-Reihenfolge)",
-          "reserve_entities": "Drei Reserve-Zahlen (gleiche Slot-Reihenfolge)",
-          "self_powered_entities": "Drei Eigenversorgungs-Schalter (gleiche Slot-Reihenfolge)",
-          "operating_mode_entities": "Drei Betriebsmodus-Auswahlen (gleiche Slot-Reihenfolge)",
-          "forecast_today_entity": "PV-Prognose heute gesamt",
-          "forecast_remaining_entity": "PV-Prognose heute verbleibend",
-          "forecast_tomorrow_entity": "PV-Prognose morgen gesamt",
-          "sun_entity": "Sonnenzustand",
-          "charge_energy_entities": "Drei Ladeenergie-Quellen (Slot-Reihenfolge)",
-          "discharge_energy_entities": "Drei Entladeenergie-Quellen (Slot-Reihenfolge)",
-          "tariff_key": "Expliziter Tarif-/Haushaltsschlüssel"
+          "battery_devices": "EcoFlow-Batterien (eine oder mehrere)",
+          "meter_device": "EcoFlow Smart Meter (Netz-Saldo)",
+          "forecast_entry": "Forecast.Solar-Eintrag",
+          "prices_entry": "Tibber-Prices-Eintrag",
+          "pv_entity": "Vorhandener PV-Energiezähler (optional)",
+          "tariff_key": "Tibber-Zuhause"
+        },
+        "data_description": {
+          "pv_entity": "Übernimmt den Verlauf eines vorhandenen Riemann-PV-Sensors. Leer lassen, dann integriert die Integration die PV-Leistung der Batterien selbst (das Lastprofil braucht dann erst einige Tage Verlauf)."
         }
       }
     },
     "error": {
-      "three_batteries_required": "Für jede Batterieliste genau drei Entitäten auswählen.",
-      "duplicate_reserves": "Jede Entität innerhalb einer Batterieliste muss eindeutig sein.",
+      "battery_count_invalid": "Mindestens eine EcoFlow-Batterie auswählen (höchstens 10), jede nur einmal.",
+      "duplicate_reserves": "Jede Batterie-Entität muss eindeutig sein.",
       "source_invalid": "Fehlende, nicht verfügbare, falsche oder doppelte Quelle bzw. leerer Tarifschlüssel.",
-      "unit_invalid": "Einheit oder Wert der Quelle ist ungültig."
+      "unit_invalid": "Einheit oder Wert der Quelle ist ungültig.",
+      "device_entities_missing": "Einem ausgewählten Gerät oder Eintrag fehlt eine benötigte Entität (SOC, Reserve, Self-powered, Lade-/Entladeenergie, PV-Leistung, Netzenergie, Prognose, Preis oder Bestpreis-Zeitraum), oder sie ist deaktiviert."
     },
     "abort": {
       "already_configured": "Mindestens ein Reserve-Ziel gehört bereits zu einem anderen Eintrag.",
@@ -72,7 +61,7 @@
           "efficiency": "Gesamtwirkungsgrad (Anteil 0..1)",
           "wear_cost_ct": "Verschleiß (ct/kWh geliefert)",
           "minimum_net_saving_ct": "Mindestnettoersparnis (ct/kWh geliefert)",
-          "capacity_kwh": "Kapazität je Batterie (kWh)"
+          "capacity_kwh": "Rückfall-Kapazität je Batterie (unbekannte Modelle, kWh)"
         }
       }
     },
@@ -135,6 +124,15 @@
       },
       "corrected_forecast_kwh": {
         "name": "Korrigierte Solarprognose"
+      },
+      "pv_energy": {
+        "name": "PV-Energie"
+      },
+      "grid_kwh": {
+        "name": "Netzladeenergie"
+      },
+      "target_soc": {
+        "name": "Netzladeziel"
       }
     },
     "binary_sensor": {
@@ -171,7 +169,7 @@
         "name": "Mindestnettoersparnis"
       },
       "capacity_kwh": {
-        "name": "Kapazität je Batterie"
+        "name": "Rückfall-Kapazität"
       }
     },
     "switch": {
