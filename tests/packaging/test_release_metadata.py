@@ -16,7 +16,7 @@ def test_release_metadata_declares_tested_compatibility():
     hacs = json.loads((ROOT / "hacs.json").read_text())
     project = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]
     assert hacs.get("homeassistant") == "2026.10.1"
-    assert manifest["version"] == project["version"] == "1.0.3"
+    assert manifest["version"] == project["version"] == "1.0.4"
     assert manifest["domain"] == COMPONENT.name
     assert manifest["config_flow"] is True
     assert manifest["integration_type"] == "service"

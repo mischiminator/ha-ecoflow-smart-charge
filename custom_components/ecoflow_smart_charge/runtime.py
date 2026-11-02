@@ -14,6 +14,8 @@ from .storage import finite
 
 # Forecasts move every quarter hour; smaller target changes are not worth a command.
 RETARGET_POINTS = 2.0
+# EcoFlow syncs a master's reserve to its slaves within seconds and reports only changes.
+UNCHANGED_GRACE = 120
 
 
 class Runtime:
@@ -28,12 +30,15 @@ class Runtime:
         *,
         evaluate=None,
         writers=(),
+        leader=None,
     ):
         # Shadow is a test mode: plan only, never send hardware commands.
         self.mode = mode if mode in ("shadow", "active") else "shadow"
         self.journal = journal
         self._read, self._write, self._evaluate = read_reserve, write_reserve, evaluate
         self.writers = tuple(writers)
+        # Returns the master's reserve entity, or None when no single master is known.
+        self._leader = leader
         self._lock = asyncio.Lock()
         self.status = "recovery_blocked" if journal.blocked else self._idle_status()
         self.last_snapshot = None
@@ -72,7 +77,7 @@ class Runtime:
             )
         )
 
-    async def _reported(self, entity, desired):
+    async def _reported(self, entity, desired, *, unchanged_ok=False):
         try:
             value, stamp = await self._maybe_await(self._read(entity))
             value = finite(float(value), 3)
@@ -82,14 +87,20 @@ class Runtime:
             if record.restore_started_at:
                 thresholds.append(record.restore_started_at)
             created = max(datetime.fromisoformat(t) for t in thresholds)
-            if (
-                stamp.tzinfo is None
-                or not 0 <= (now - stamp).total_seconds() < 120
-                or stamp <= created
-            ):
+            if stamp.tzinfo is None or abs(value - desired) > 0.001:
                 return False
-            if abs(value - desired) > 0.001:
-                return False
+            if not 0 <= (now - stamp).total_seconds() < 120 or stamp <= created:
+                # A restore value the device has shown since before the session, without any
+                # report since, was never changed by it (EcoFlow reports only changes).
+                session = datetime.fromisoformat(record.created_at)
+                started = record.restore_started_at
+                if not (
+                    unchanged_ok
+                    and stamp < session
+                    and started
+                    and (now - datetime.fromisoformat(started)).total_seconds() >= UNCHANGED_GRACE
+                ):
+                    return False
             await self.journal.async_evidence(entity, value, stamp.isoformat())
             return True
         except TypeError, ValueError, AttributeError, KeyError:
@@ -102,10 +113,14 @@ class Runtime:
         phase = "restore_pending" if restore else "charge_pending"
         if restore and self.journal.record.phase != "restore_pending":
             await self.journal.async_update_phase("restore_pending", targets)
+        leader = self._leader() if self._leader else None
+        leader = leader if leader in targets else None
+        # The batteries sync one reserve: the master is commanded, its slaves confirm it.
+        confirm = [e for e in targets if e != leader] or list(targets)
         pending = {}
-        for entity, target in targets.items():
-            if not await self._reported(entity, target):
-                pending[entity] = target
+        for entity in confirm:
+            if not await self._reported(entity, targets[entity], unchanged_ok=restore):
+                pending[entity] = targets[entity]
         await self.journal.async_update_phase(phase, pending)
         if not pending:
             if restore:
@@ -116,7 +131,8 @@ class Runtime:
                 self.status = "charging"
             return True
         self.status = phase
-        for entity, target in pending.items():
+        commands = {leader: targets[leader]} if leader else pending
+        for entity, target in commands.items():
             record = self.journal.record
             intent = record.intent_at.get(entity)
             if intent is not None:

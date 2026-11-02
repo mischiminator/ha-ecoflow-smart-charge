@@ -96,6 +96,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         state = hass.states.get(entity)
         return (state.state, state.last_reported) if state else (None, None)
 
+    def leader():
+        from homeassistant.util import dt as dt_util
+
+        from .reader import leader_reserve
+
+        return leader_reserve(hass, entry.data, dt_util.utcnow())
+
     async def write(entity, value):
         await hass.services.async_call(
             "number", "set_value", {"entity_id": entity, "value": value}, blocking=True
@@ -108,6 +115,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         write,
         evaluate=reader.refresh,
         writers=tuple(entry.data.get("reserve_entities", [])),
+        leader=leader,
     )
     runtime.reader = reader
     runtime.applied_options = dict(entry.options)
