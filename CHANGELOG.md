@@ -3,6 +3,12 @@
 Releases are created by pushing a `vX.Y.Z` tag; the release workflow checks the tag against
 `manifest.json`, `pyproject.toml` and this file and publishes the section below as release notes.
 
+## [1.0.3] - 2026-11-02
+
+### Fixed
+- EcoFlow Cloud reports the backup reserve only when it changes (and on restart), so any age limit kept planning at `source_stale` for hours. Planning now only needs a valid reserve value; commands still need a fresh readback after each write.
+- The current price is reported once per quarter hour. Its age limit was exactly 900 s, so the minute safety check could see it stale right at each boundary and end a running session. It is now 20 minutes; the price is still checked against the published quarter-hour series.
+
 ## [1.0.2] - 2026-11-02
 
 ### Changed

@@ -6,10 +6,25 @@ from datetime import timedelta
 import pytest
 from test_economics import candidate
 
-from custom_components.ecoflow_smart_charge.planner.core import Battery, PricePoint, decide
+from custom_components.ecoflow_smart_charge.planner.core import (
+    PRICE_MAX_AGE,
+    Battery,
+    PricePoint,
+    decide,
+)
 
 
-@pytest.mark.parametrize("age,allowed", [(-0.001, False), (0, True), (899.999, True), (900, False)])
+# A quarter-hourly price is still valid right at the next boundary (900 s).
+@pytest.mark.parametrize(
+    "age,allowed",
+    [
+        (-0.001, False),
+        (0, True),
+        (900, True),
+        (PRICE_MAX_AGE - 0.001, True),
+        (PRICE_MAX_AGE, False),
+    ],
+)
 def test_price_source_age_exclusive(age, allowed):
     c = candidate()
     assert (

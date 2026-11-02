@@ -13,6 +13,7 @@ from .validation import aware, number
 
 __all__ = [
     "MAX_BATTERIES",
+    "PRICE_MAX_AGE",
     "Battery",
     "HourlyProfile",
     "PlanResult",
@@ -25,6 +26,9 @@ __all__ = [
 ]
 
 EPSILON = 1e-9
+# The current price is reported once per quarter hour; a little slack keeps the minute
+# safety check from seeing it stale right at the boundary.
+PRICE_MAX_AGE = 1200
 # Any 1..MAX_BATTERIES batteries; the bound only rejects corrupt mappings.
 MAX_BATTERIES = 10
 
@@ -150,7 +154,7 @@ def _reason(value: PlannerInput) -> str | None:
         return "time_invalid"
     if value.sunset.timestamp() <= value.now.timestamp():
         return "sunset_invalid"
-    if not 0 <= value.now.timestamp() - value.price_series_updated.timestamp() < 900:
+    if not 0 <= value.now.timestamp() - value.price_series_updated.timestamp() < PRICE_MAX_AGE:
         return "prices_stale"
     flags = (
         value.best_price_window,
