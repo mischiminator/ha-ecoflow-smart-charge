@@ -69,8 +69,9 @@ def test_future_solar_deficit_consumes_baseline_before_incremental_energy():
     assert p.avoided_price_ct == pytest.approx(40)
 
 
-def test_active_session_only_bypasses_solar_start_gate():
+def test_session_holds_when_grid_share_is_covered_by_solar():
     c = candidate(profile=solar_profile(), forecast_today=8)
     assert decide(c).reason == "solar_surplus_sufficient"
-    assert decide(replace(c, active_session=True)).allowed
+    held = decide(replace(c, active_session=True))
+    assert held.reason == "target_reached" and held.allowed
     assert not decide(replace(c, active_session=True, best_price_window=False)).allowed

@@ -60,6 +60,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.config_entries.async_update_entry(
             entry, data={**entry.data, "journal_initialized": True}
         )
+    if "battery_devices" in entry.data and journal.record is None and not journal.blocked:
+        # Follow entity renames; a pending session keeps the mapping it saved reserves for.
+        from .sources import SourceMissing, resolve
+
+        try:
+            resolved = resolve(hass, entry.data)
+        except KeyError, SourceMissing:
+            resolved = {}
+        if resolved and any(entry.data.get(k) != v for k, v in resolved.items()):
+            hass.config_entries.async_update_entry(entry, data={**entry.data, **resolved})
     reader = SourceReader(hass, entry, journal)
 
     async def read(entity):

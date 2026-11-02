@@ -25,7 +25,6 @@ def data_states(hass, now):
         ("soc", "sensor", "50", "%"),
         ("reserve", "number", "13", "%"),
         ("self_powered", "switch", "on", None),
-        ("operating_mode", "select", "self_powered", None),
         ("charge_energy", "sensor", "1", "kWh"),
         ("discharge_energy", "sensor", "1", "kWh"),
     ]:
@@ -90,6 +89,8 @@ async def test_source_to_plan_selects_tariff_and_fails_closed_on_wrong_home(hass
     with patch("custom_components.ecoflow_smart_charge.reader.read_statistics", return_value=rows):
         result = await reader.refresh()
         assert result["valid"] and result["allowed"]
+        # No PV surplus expected: every reserve is targeted to a full battery.
+        assert result["targets"] == dict.fromkeys(data["reserve_entities"], 100.0)
         assert reader.input.current_price_ct == 10
         assert reader.input.prices[1].price_ct == 50
         reader.entry = MockConfigEntry(domain=DOMAIN, data={**data, "tariff_key": "Missing"})

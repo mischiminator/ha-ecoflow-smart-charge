@@ -9,6 +9,8 @@ from math import isfinite
 from typing import Any, Protocol
 from uuid import uuid4
 
+from .planner.core import MAX_BATTERIES
+
 PHASES = {"intent_persisted", "charge_pending", "charging", "restore_pending", "recovery_pending"}
 
 
@@ -42,6 +44,8 @@ class SessionRecord:
     intent_at: dict[str, str] = field(default_factory=dict)
     restore_started_at: str | None = None
     intent_targets: dict[str, float] = field(default_factory=dict)
+    # Reserve each battery is charged to; empty in older journals means 100%.
+    charge_targets: dict[str, float] = field(default_factory=dict)
 
 
 class StoreProtocol(Protocol):
@@ -66,7 +70,7 @@ def validate_session(raw):
     if (
         not isinstance(record.reserves_before, dict)
         or not record.reserves_before
-        or len(record.reserves_before) > 3
+        or len(record.reserves_before) > MAX_BATTERIES
     ):
         raise ValueError("invalid mapping")
     if not isinstance(record.pending_targets, dict):
@@ -85,7 +89,13 @@ def validate_session(raw):
         raise ValueError("unknown evidence")
     iso_day(record.solar_day)
     iso_day(record.full_marker_day)
-    for mapping in (record.command_ids, record.intent_at, record.readback, record.intent_targets):
+    for mapping in (
+        record.command_ids,
+        record.intent_at,
+        record.readback,
+        record.intent_targets,
+        record.charge_targets,
+    ):
         if not isinstance(mapping, dict) or set(mapping) - set(record.reserves_before):
             raise ValueError("invalid command evidence")
     if any(not isinstance(v, str) or not v for v in record.command_ids.values()):
@@ -96,7 +106,7 @@ def validate_session(raw):
     ]:
         if not isinstance(stamp, str) or datetime.fromisoformat(stamp).tzinfo is None:
             raise ValueError("invalid intent timestamp")
-    for target in record.intent_targets.values():
+    for target in (*record.intent_targets.values(), *record.charge_targets.values()):
         finite(target, 3)
     for evidence in record.readback.values():
         if not isinstance(evidence, dict) or set(evidence) != {"value", "at"}:
@@ -205,6 +215,7 @@ class PersistentSessionStore:
                     dict(reserves_before),
                     dict(targets),
                     solar_day=solar_day,
+                    charge_targets=dict(targets),
                 )
             )
         )
@@ -238,6 +249,13 @@ class PersistentSessionStore:
                 intent_at={**self.record.intent_at, entity: datetime.now(UTC).isoformat()},
                 intent_targets={**self.record.intent_targets, entity: target},
             )
+        )
+
+    async def async_set_charge_targets(self, targets):
+        if self.record is None:
+            raise ValueError("no session")
+        await self._save(
+            validate_session(asdict(replace(self.record, charge_targets=dict(targets))))
         )
 
     async def async_evidence(self, entity, value, stamp):

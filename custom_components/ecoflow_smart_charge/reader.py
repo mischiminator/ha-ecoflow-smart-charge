@@ -7,7 +7,14 @@ from datetime import UTC, datetime, timedelta
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util import dt as dt_util
 
-from .planner.core import Battery, PlannerInput, PricePoint, build_hourly_profile, decide
+from .planner.core import (
+    MAX_BATTERIES,
+    Battery,
+    PlannerInput,
+    PricePoint,
+    build_hourly_profile,
+    decide,
+)
 from .storage import finite
 
 
@@ -32,8 +39,10 @@ def parse_prices(response, tariff):
 
 
 def join_statistics(raw, keys, zone):
-    if len(keys) != 8 or len(set(keys)) != 8:
-        raise ValueError("eight_distinct_statistics_required")
+    """Keys are grid, PV, then n charge and n discharge energy statistics."""
+    batteries, odd = divmod(len(keys) - 2, 2)
+    if odd or not 1 <= batteries <= MAX_BATTERIES or len(set(keys)) != len(keys):
+        raise ValueError("distinct_statistics_required")
     indexed = []
     for key in keys:
         series = {}
@@ -63,8 +72,8 @@ def join_statistics(raw, keys, zone):
             "start": t.astimezone(zone),
             "grid": indexed[0][t],
             "pv": indexed[1][t],
-            "charges": tuple(s[t] for s in indexed[2:5]),
-            "discharges": tuple(s[t] for s in indexed[5:8]),
+            "charges": tuple(s[t] for s in indexed[2 : 2 + batteries]),
+            "discharges": tuple(s[t] for s in indexed[2 + batteries :]),
         }
         for t in sorted(common)
     ]
@@ -158,6 +167,16 @@ class SourceReader:
         self.error = None
         self.settings = {}
 
+    @property
+    def data(self):
+        data = self.entry.data
+        if data.get("pv_entity"):
+            return data
+        # No PV meter selected: use this entry's own integrated PV energy sensor.
+        from .sources import own_pv_entity
+
+        return {**data, "pv_entity": own_pv_entity(self.hass, self.entry.entry_id)}
+
     def selected_ids(self):
         from .config_flow import SINGLES, TRIPLES
 
@@ -180,7 +199,7 @@ class SourceReader:
 
     async def refresh(self):
         now = dt_util.now()
-        data = self.entry.data
+        data = self.data
         settings = {**self.entry.options, **self.settings}
         gate = {
             "master": settings.get("master", False),
@@ -194,7 +213,7 @@ class SourceReader:
         # economic refresh must not lose the session's mandatory full marker.
         try:
             socs = [self.numeric(e, now, 600, high=100, units={"%"}) for e in data["soc_entities"]]
-            gate["full"] = len(socs) == 3 and all(s >= 100 for s in socs)
+            gate["full"] = bool(socs) and all(s >= 100 for s in socs)
         except KeyError, ValueError, TypeError:
             pass
         try:
@@ -246,9 +265,6 @@ class SourceReader:
             protection = all(
                 (s := self.hass.states.get(e)) is not None and s.state == "on"
                 for e in data["self_powered_entities"]
-            ) and all(
-                (s := self.hass.states.get(e)) is not None and s.state == "self_powered"
-                for e in data["operating_mode_entities"]
             )
             window = self.hass.states.get(data["price_window_entity"])
             sun = self.hass.states.get(data["sun_entity"])
@@ -293,8 +309,16 @@ class SourceReader:
                 forecast_tomorrow=tomorrow,
                 pv_correction=self.journal.learning["correction"],
                 sunset=sunset,
-                batteries=tuple(Battery(s, r) for s, r in zip(soc, reserves, strict=True)),
-                capacity_kwh=settings.get("capacity_kwh", 2.0),
+                batteries=tuple(
+                    Battery(s, r, c)
+                    for s, r, c in zip(
+                        soc,
+                        reserves,
+                        data.get("capacities_kwh") or [None] * len(soc),
+                        strict=True,
+                    )
+                ),
+                capacity_kwh=settings.get("capacity_kwh", 1.92),
                 efficiency=settings.get("efficiency", 0.85),
                 wear_cost_ct=settings.get("wear_cost_ct", 2.0),
                 charge_ceiling_ct=settings.get("charge_ceiling_ct", 32.0),
@@ -318,6 +342,7 @@ class SourceReader:
                 "batteries_full",
                 "price_above_ceiling",
                 "solar_surplus_sufficient",
+                "target_reached",
                 "outside_best_price_window",
                 "insufficient_priced_consumption",
                 "nonpositive_reference_price",
@@ -332,6 +357,9 @@ class SourceReader:
                 reason=plan.reason,
                 advantage=plan.price_advantage_percent,
                 net_saving=plan.net_saving_ct,
+                targets=dict.fromkeys(data["reserve_entities"], plan.target_soc)
+                if plan.target_soc is not None
+                else {},
                 profile_valid=profile.valid,
             )
         except (
@@ -364,7 +392,7 @@ class SourceReader:
             raw["probe_kwh"],
             date.fromisoformat(raw["learned_day"]) if raw["learned_day"] else None,
         )
-        data = self.entry.data
+        data = self.data
         if (
             state.probe_day is not None
             and state.probe_day < now.date()
