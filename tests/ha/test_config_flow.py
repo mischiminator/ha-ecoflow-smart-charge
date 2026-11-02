@@ -134,3 +134,19 @@ async def test_flow_stores_capacity_per_device_model(hass) -> None:
     chosen = selection(hass, models=["Stream Ultra X", "Stream AC", "Unknown 9000"])
     result = await submit(hass, chosen)
     assert result["result"].data["capacities_kwh"] == [3.84, 1.92, None]
+
+
+@pytest.mark.usefixtures("enable_custom_integrations")
+async def test_missing_system_load_sensor_keeps_setup_working(hass) -> None:
+    chosen = selection(hass)
+    registry = er.async_get(hass)
+    load = next(
+        e
+        for e in er.async_entries_for_device(registry, chosen["battery_devices"][1])
+        if e.unique_id.endswith("-powGetSysLoad")
+    )
+    registry.async_remove(load.entity_id)
+    result = await submit(hass, chosen)
+    assert result["type"] == "create_entry"
+    assert "sys_load_entities" not in result["result"].data
+    assert await hass.config_entries.async_unload(result["result"].entry_id)

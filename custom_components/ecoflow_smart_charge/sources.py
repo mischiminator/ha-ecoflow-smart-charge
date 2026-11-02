@@ -21,7 +21,10 @@ BATTERY = {
     "charge_energy_entities": ("sensor", "-accuChgEnergy"),
     "discharge_energy_entities": ("sensor", "-accuDsgEnergy"),
     "pv_power_entities": ("sensor", "-powGetPvSum"),
+    # Only the system master reports a load; it is the one battery that takes reserve commands.
+    "sys_load_entities": ("sensor", "-powGetSysLoad"),
 }
+OPTIONAL = {"sys_load_entities"}
 METER = ("sensor", "-gridConnectionDataRecord-totalActiveEnergy")
 # Provider integrations use "<config entry id>_<key>" unique IDs.
 FORECAST = {
@@ -78,10 +81,14 @@ def resolve(hass, selection):
     """Return the reader mapping for one flow selection or raise SourceMissing."""
     registry = er.async_get(hass)
     devices = selection["battery_devices"]
-    data = {
-        key: [_device_entity(registry, device, *spec) for device in devices]
-        for key, spec in BATTERY.items()
-    }
+    data = {}
+    for key, spec in BATTERY.items():
+        try:
+            data[key] = [_device_entity(registry, device, *spec) for device in devices]
+        except SourceMissing:
+            # Without it every battery is commanded and confirmed itself, as before.
+            if key not in OPTIONAL:
+                raise
     models = dr.async_get(hass)
     data["capacities_kwh"] = [
         model_capacity(getattr(models.async_get(device), "model", None)) for device in devices

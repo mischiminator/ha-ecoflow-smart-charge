@@ -3,6 +3,14 @@
 Releases are created by pushing a `vX.Y.Z` tag; the release workflow checks the tag against
 `manifest.json`, `pyproject.toml` and this file and publishes the section below as release notes.
 
+## [1.0.4] - 2026-11-02
+
+### Changed
+- Reserve commands go only to the system master — the one battery whose *Power Sys Load* is above 0 — and are confirmed by the slaves, which pick up the synced value and report the change. The master is determined anew for every command; with a single battery it confirms itself, and without a unique master every battery is commanded as before.
+
+### Fixed
+- Restoring a reserve that never changed (for example after a charge command that did not reach the devices) no longer waits forever for a report EcoFlow never sends: when every confirming battery still shows its original value and has reported nothing since the session started, the restore counts as confirmed after a 2-minute sync grace. Charging is never confirmed this way.
+
 ## [1.0.3] - 2026-11-02
 
 ### Fixed

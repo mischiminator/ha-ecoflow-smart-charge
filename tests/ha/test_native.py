@@ -74,6 +74,7 @@ def selection(hass, *, pv="sensor.pv_riemann", prefix="BAT", batteries=3, models
         "charge_energy_entities": ("1", "kWh"),
         "discharge_energy_entities": ("1", "kWh"),
         "pv_power_entities": ("120", "W"),
+        "sys_load_entities": ("0", "W"),
     }
 
     def device(serial, specs, model=None):

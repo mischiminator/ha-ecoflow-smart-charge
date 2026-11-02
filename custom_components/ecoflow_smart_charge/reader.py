@@ -32,6 +32,21 @@ def fresh(state, now, seconds):
     return stamp.tzinfo is not None and 0 <= (now - stamp).total_seconds() < seconds
 
 
+def leader_reserve(hass, data, now):
+    """Reserve entity of the system master: the only battery reporting a system load."""
+    active = []
+    for load, reserve in zip(
+        data.get("sys_load_entities") or [], data.get("reserve_entities") or [], strict=False
+    ):
+        state = hass.states.get(load)
+        try:
+            if fresh(state, now, DEVICE_MAX_AGE) and float(state.state) > 0:
+                active.append(reserve)
+        except TypeError, ValueError:
+            continue
+    return active[0] if len(active) == 1 else None
+
+
 def parse_prices(response, tariff):
     rows = response["prices"].get(tariff)
     if not isinstance(rows, list) or not rows:

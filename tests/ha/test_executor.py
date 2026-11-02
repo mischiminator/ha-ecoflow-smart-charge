@@ -197,3 +197,99 @@ async def test_no_session_when_targets_do_not_exceed_original_reserves():
     gate["targets"] = dict.fromkeys(values, 5.0)
     assert not await runtime.async_start(dict(values))
     assert calls == [] and runtime.journal.record is None
+
+
+@pytest.mark.asyncio
+async def test_only_the_master_is_commanded_and_slaves_confirm():
+    runtime, _, values, stamps, calls, gate = await rig()
+    runtime._leader = lambda: "number.slot_0"
+    gate["targets"] = dict.fromkeys(values, 60.0)
+    assert not await runtime.async_start(dict(values))
+    assert calls == [("number.slot_0", 60.0)]
+    assert {"number.slot_1", "number.slot_2"} <= set(runtime.journal.record.pending_targets)
+    # The slaves pick up the synced reserve and report it; the master's own report is not needed.
+    for e in ("number.slot_1", "number.slot_2"):
+        values[e], stamps[e] = 60.0, datetime.now(UTC)
+    assert await runtime.async_retry_charge()
+    assert runtime.status == "charging" and len(calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_single_battery_master_confirms_itself():
+    from custom_components.ecoflow_smart_charge.runtime import Runtime
+
+    disk = Disk()
+    values, stamps, calls = {"number.solo": 10}, {"number.solo": datetime.now(UTC)}, []
+
+    async def write(e, v):
+        calls.append((e, v))
+
+    gate = {"allowed": True, "valid": True, "master": True, "targets": {"number.solo": 50.0}}
+    runtime = Runtime(
+        "active",
+        PersistentSessionStore(disk),
+        lambda e: (values[e], stamps[e]),
+        write,
+        evaluate=lambda: dict(gate),
+        writers=("number.solo",),
+        leader=lambda: "number.solo",
+    )
+    assert not await runtime.async_start(dict(values))
+    values["number.solo"], stamps["number.solo"] = 50.0, datetime.now(UTC)
+    assert await runtime.async_retry_charge()
+    assert calls == [("number.solo", 50.0)]
+
+
+@pytest.mark.asyncio
+async def test_restore_of_a_never_changed_reserve_confirms_after_grace():
+    from dataclasses import replace
+
+    runtime, _, values, _stamps, calls, gate = await rig()
+    runtime._leader = lambda: "number.slot_0"
+    gate["targets"] = dict.fromkeys(values, 60.0)
+    assert not await runtime.async_start(dict(values))
+    # The charge command never reached the devices: nothing changed, nothing was reported.
+    gate["allowed"] = False
+    await runtime.async_recalculate()
+    record = runtime.journal.record
+    assert record.phase == "restore_pending"
+    assert calls[-1] == ("number.slot_0", 10)
+    # Within the sync grace the unchanged value is not trusted yet.
+    assert not await runtime.async_restore()
+    past = (datetime.now(UTC) - timedelta(seconds=180)).isoformat()
+    runtime.journal.record = replace(record, restore_started_at=past)
+    assert await runtime.async_restore()
+    assert runtime.journal.record is None and runtime.status == "restored"
+
+
+@pytest.mark.asyncio
+async def test_unchanged_value_never_confirms_a_charge():
+    from dataclasses import replace
+
+    runtime, _, values, _stamps, _calls, gate = await rig()
+    runtime._leader = lambda: "number.slot_0"
+    gate["targets"] = dict.fromkeys(values, 60.0)
+    assert not await runtime.async_start(dict(values))
+    record = runtime.journal.record
+    past = (datetime.now(UTC) - timedelta(seconds=600)).isoformat()
+    runtime.journal.record = replace(record, created_at=past)
+    assert not await runtime.async_retry_charge()
+    assert runtime.journal.record.phase == "charge_pending"
+
+
+async def test_leader_is_the_single_fresh_battery_with_system_load(hass):
+    from custom_components.ecoflow_smart_charge.reader import leader_reserve
+
+    data = {
+        "sys_load_entities": ["sensor.load_0", "sensor.load_1", "sensor.load_2"],
+        "reserve_entities": ["number.r0", "number.r1", "number.r2"],
+    }
+    for entity, value in zip(data["sys_load_entities"], ("0", "318", "0"), strict=True):
+        hass.states.async_set(entity, value, {"unit_of_measurement": "W"})
+    now = datetime.now(UTC)
+    assert leader_reserve(hass, data, now) == "number.r1"
+    # A stale master is not trusted; neither are two batteries with load.
+    assert leader_reserve(hass, data, now + timedelta(seconds=700)) is None
+    hass.states.async_set("sensor.load_2", "5", {"unit_of_measurement": "W"})
+    assert leader_reserve(hass, data, datetime.now(UTC)) is None
+    assert leader_reserve(hass, {"reserve_entities": data["reserve_entities"]}, now) is None
