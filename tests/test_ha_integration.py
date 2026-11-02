@@ -9,7 +9,7 @@ from custom_components.ecoflow_smart_charge.const import DOMAIN
 
 
 @pytest.mark.usefixtures("enable_custom_integrations")
-async def test_entry_setup_is_shadow_by_default_and_registers_targeted_services(
+async def test_entry_setup_is_shadow_by_default_and_registers_targeted_service(
     hass, freezer
 ) -> None:
     # Keep the minute/quarter-hour refresh timers outside this passive-setup assertion.
@@ -37,14 +37,12 @@ async def test_entry_setup_is_shadow_by_default_and_registers_targeted_services(
     runtime = entry.runtime_data
     assert runtime.mode == "shadow"
     assert runtime.status == "shadow"
-    assert hass.services.has_service(DOMAIN, "recalculate")
-    assert hass.services.has_service(DOMAIN, "request_cutover")
-    assert hass.services.has_service(DOMAIN, "confirm_recovery")
+    assert set(hass.services.async_services_for_domain(DOMAIN)) == {"recalculate"}
 
     await hass.services.async_call(
         DOMAIN, "recalculate", {"config_entry_id": entry.entry_id}, blocking=True
     )
-    assert runtime.status == "shadow_recalculated"
+    assert runtime.status == "shadow"
 
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()

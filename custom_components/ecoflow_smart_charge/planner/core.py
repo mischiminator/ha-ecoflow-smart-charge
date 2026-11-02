@@ -279,7 +279,7 @@ def decide(value: PlannerInput) -> PlanResult:
         return PlanResult(
             False, "projection_invalid", 0.0, 0.0, 0.0, 0.0, None, solar_day=curve.solar_day
         )
-    reason = "eligible_shadow_plan"
+    reason = "eligible"
     if value.full_marker_for_solar_day:
         reason = "already_full_for_solar_day"
     elif missing <= 0:
@@ -303,7 +303,7 @@ def decide(value: PlannerInput) -> PlanResult:
     elif net < value.minimum_net_saving_ct:
         reason = "net_saving_too_low"
     return PlanResult(
-        reason == "eligible_shadow_plan",
+        reason == "eligible",
         reason,
         missing,
         solar,

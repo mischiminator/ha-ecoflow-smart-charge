@@ -35,23 +35,12 @@ def test_fields_match_actual_adapter_schema():
             mapping.update(ast.literal_eval(node.value))
     assert mapping, "adapter no longer exposes expected source mapping schema"
     strings = json.loads((COMPONENT / "strings.json").read_text())
-    fields = set(mapping) | {"name", "tariff_key", "legacy_writer_entities"}
+    fields = set(mapping) | {"name", "tariff_key"}
     assert set(strings["config"]["step"]["user"]["data"]) == fields
     assert set(strings["config"]["step"]["reconfigure"]["data"]) == fields
-    tree = ast.parse((COMPONENT / "__init__.py").read_text())
-    schema = next(
-        node.value
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id == "schemas" for t in node.targets)
-    )
     services = yaml.safe_load((COMPONENT / "services.yaml").read_text())
-    assert set(services) == {key.value for key in schema.keys}
-    for key, value in zip(schema.keys, schema.values, strict=True):
-        fields = {"config_entry_id"}
-        if isinstance(value.args[0], ast.Dict):
-            fields.update(k.args[0].value for k in value.args[0].keys if isinstance(k, ast.Call))
-        assert set(services[key.value]["fields"]) == fields
+    assert set(services) == {"recalculate"}
+    assert set(services["recalculate"]["fields"]) == {"config_entry_id"}
 
 
 def test_complete_matching_locales_and_service_fields():

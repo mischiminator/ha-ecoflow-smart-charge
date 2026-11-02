@@ -1,4 +1,4 @@
-"""Integration lifecycle and explicitly targeted services, using supported HA APIs."""
+"""Integration lifecycle and the explicitly targeted recalculate service."""
 
 from __future__ import annotations
 
@@ -17,79 +17,26 @@ if TYPE_CHECKING:
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    from homeassistant.core import SupportsResponse
     from homeassistant.exceptions import ServiceValidationError
-
-    target = {vol.Required("config_entry_id"): str}
-    schemas = {
-        "recalculate": vol.Schema(target),
-        "request_cutover": vol.Schema(
-            {
-                **target,
-                vol.Required("confirmed"): bool,
-                vol.Required("commissioning_confirmed"): bool,
-            }
-        ),
-        "confirm_recovery": vol.Schema({**target, vol.Required("confirmed"): bool}),
-        "record_shadow_comparison": vol.Schema(
-            {
-                **target,
-                vol.Required("expected"): vol.Schema(
-                    {
-                        vol.Required("allowed"): bool,
-                        vol.Required("reason"): str,
-                        vol.Required("profile_valid"): bool,
-                        vol.Required("advantage"): vol.Any(None, vol.Coerce(float)),
-                        vol.Required("net_saving"): vol.Coerce(float),
-                    }
-                ),
-            }
-        ),
-        "import_state": vol.Schema(
-            {**target, vol.Required("payload"): dict, vol.Optional("apply", default=False): bool}
-        ),
-    }
 
     async def handle(call):
         entry = hass.config_entries.async_get_entry(call.data["config_entry_id"])
         if entry is None or entry.domain != DOMAIN or getattr(entry, "runtime_data", None) is None:
             raise ServiceValidationError("configured controller entry is unavailable")
-        runtime = entry.runtime_data
         try:
-            if call.service == "recalculate":
-                await runtime.async_recalculate()
-            elif call.service == "request_cutover":
-                await runtime.async_request_cutover(
-                    confirmed=call.data["confirmed"],
-                    commissioning_confirmed=call.data["commissioning_confirmed"],
-                )
-            elif call.service == "confirm_recovery":
-                await runtime.async_confirm_recovery(confirmed=call.data["confirmed"])
-            elif call.service == "record_shadow_comparison":
-                await runtime.async_record_comparison(call.data["expected"])
-            elif call.service == "import_state":
-                from .migration import async_import_state
-
-                return await async_import_state(
-                    hass, entry, call.data["payload"], apply=call.data["apply"]
-                )
+            await entry.runtime_data.async_recalculate()
         except (ValueError, OSError, RuntimeError) as err:
             raise ServiceValidationError(
                 "controller request rejected: " + type(err).__name__
             ) from err
-        return None
 
-    for service, schema in schemas.items():
-        if not hass.services.has_service(DOMAIN, service):
-            hass.services.async_register(
-                DOMAIN,
-                service,
-                handle,
-                schema=schema,
-                supports_response=SupportsResponse.OPTIONAL
-                if service == "import_state"
-                else SupportsResponse.NONE,
-            )
+    if not hass.services.has_service(DOMAIN, "recalculate"):
+        hass.services.async_register(
+            DOMAIN,
+            "recalculate",
+            handle,
+            schema=vol.Schema({vol.Required("config_entry_id"): str}),
+        )
     return True
 
 
@@ -124,15 +71,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "number", "set_value", {"entity_id": entity, "value": value}, blocking=True
         )
 
-    comparison_store = Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.comparison")
     runtime = Runtime(
-        "shadow",
+        entry.options.get("mode", "shadow"),
         journal,
         read,
         write,
         evaluate=reader.refresh,
         writers=tuple(entry.data.get("reserve_entities", [])),
-        save_comparison=comparison_store.async_save,
     )
     runtime.reader = reader
     runtime.applied_options = dict(entry.options)
@@ -181,7 +126,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(entry.add_update_listener(updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     # Setup itself stays entirely passive. Timers/events/explicit service perform
-    # refresh after HA sources and Recorder are ready. Restart always remains shadow.
+    # refresh after HA sources and Recorder are ready.
     return True
 
 

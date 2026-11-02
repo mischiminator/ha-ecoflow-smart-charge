@@ -21,7 +21,6 @@ async def test_config_flow_rejects_incomplete_three_battery_mapping(hass) -> Non
             "forecast_tomorrow_entity": "sensor.forecast_tomorrow",
             "sun_entity": "sun.test",
             "tariff_key": "Synthetic",
-            "legacy_writer_entities": ["automation.legacy"],
             "charge_energy_entities": ["sensor.charge_1", "sensor.charge_2", "sensor.charge_3"],
             "discharge_energy_entities": [
                 "sensor.discharge_1",

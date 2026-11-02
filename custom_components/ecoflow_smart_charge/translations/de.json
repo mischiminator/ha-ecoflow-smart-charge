@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "EcoFlow Smart Charge",
-        "description": "Vorhandene Entitäten auswählen. Keine Cloud-Zugangsdaten. Alle Batterielisten müssen dieselbe Slot-Reihenfolge haben. Start ausschließlich in Shadow.",
+        "description": "Vorhandene Entitäten auswählen. Keine Cloud-Zugangsdaten. Alle Batterielisten müssen dieselbe Slot-Reihenfolge haben. Neue Einträge starten im Shadow-Modus.",
         "data": {
           "name": "Name",
           "grid_energy_entity": "Verbindlicher Netz-Saldo-Energiezähler",
@@ -21,13 +21,12 @@
           "sun_entity": "Sonnenzustand",
           "charge_energy_entities": "Drei Ladeenergie-Quellen (Slot-Reihenfolge)",
           "discharge_energy_entities": "Drei Entladeenergie-Quellen (Slot-Reihenfolge)",
-          "tariff_key": "Expliziter Tarif-/Haushaltsschlüssel",
-          "legacy_writer_entities": "Zu sperrende alte Preisladungs-Writer"
+          "tariff_key": "Expliziter Tarif-/Haushaltsschlüssel"
         }
       },
       "reconfigure": {
         "title": "Quellen neu zuordnen",
-        "description": "Nur ohne offene Sitzung. Slot-Reihenfolge beibehalten; danach Shadow-Vergleich wiederholen.",
+        "description": "Nur ohne offene Sitzung. Slot-Reihenfolge beibehalten.",
         "data": {
           "name": "Name",
           "grid_energy_entity": "Verbindlicher Netz-Saldo-Energiezähler",
@@ -44,15 +43,14 @@
           "sun_entity": "Sonnenzustand",
           "charge_energy_entities": "Drei Ladeenergie-Quellen (Slot-Reihenfolge)",
           "discharge_energy_entities": "Drei Entladeenergie-Quellen (Slot-Reihenfolge)",
-          "tariff_key": "Expliziter Tarif-/Haushaltsschlüssel",
-          "legacy_writer_entities": "Zu sperrende alte Preisladungs-Writer"
+          "tariff_key": "Expliziter Tarif-/Haushaltsschlüssel"
         }
       }
     },
     "error": {
       "three_batteries_required": "Für jede Batterieliste genau drei Entitäten auswählen.",
       "duplicate_reserves": "Jede Entität innerhalb einer Batterieliste muss eindeutig sein.",
-      "source_invalid": "Fehlende, nicht verfügbare, falsche oder doppelte Quelle bzw. ungültiger Tarif/Writer.",
+      "source_invalid": "Fehlende, nicht verfügbare, falsche oder doppelte Quelle bzw. leerer Tarifschlüssel.",
       "unit_invalid": "Einheit oder Wert der Quelle ist ungültig."
     },
     "abort": {
@@ -65,12 +63,12 @@
     "step": {
       "init": {
         "title": "Steuerungsoptionen",
-        "description": "Aktive Steuerung nur nach sicherer, ausdrücklich bestätigter Übernahme. Migration darf bestehende Werte nicht durch Standardwerte ersetzen.",
+        "description": "Shadow berechnet den Plan ohne Gerätebefehle; Aktiv steuert die Batteriereserven.",
         "data": {
           "mode": "Steuerungsmodus",
           "minimum_price_advantage_percent": "Mindestpreisvorteil (%)",
           "charge_ceiling_ct": "Maximaler Ladepreis (ct/kWh)",
-          "master": "Preisladung erlauben (keine Übernahmefreigabe)",
+          "master": "Preisladung erlauben",
           "efficiency": "Gesamtwirkungsgrad (Anteil 0..1)",
           "wear_cost_ct": "Verschleiß (ct/kWh geliefert)",
           "minimum_net_saving_ct": "Mindestnettoersparnis (ct/kWh geliefert)",
@@ -81,82 +79,18 @@
     "error": {
       "invalid_setting": "Ungültiger oder nicht endlicher Wert außerhalb der Grenzen.",
       "invalid_master": "Master muss ein Wahrheitswert sein.",
-      "unsafe_mode": "Aktivierung ausschließlich über bestätigte sichere Übernahme.",
+      "invalid_mode": "Modus muss Shadow oder Aktiv sein.",
       "unknown_setting": "Unbekannte Einstellung."
     }
   },
   "services": {
     "recalculate": {
       "name": "Plan neu berechnen",
-      "description": "Quellen über die Runtime neu auswerten. Shadow sendet niemals Gerätebefehle; im aktiven Modus gelten weiterhin alle Sicherheits- und Recovery-Sperren.",
+      "description": "Quellen über die Runtime neu auswerten. Shadow sendet niemals Gerätebefehle; im aktiven Modus gelten die normalen Sicherheits- und Recovery-Sperren.",
       "fields": {
         "config_entry_id": {
           "name": "Integrationseintrag",
           "description": "Genau einen geladenen EcoFlow-Smart-Charge-Eintrag auswählen."
-        }
-      }
-    },
-    "request_cutover": {
-      "name": "Überwachte Übernahme anfordern",
-      "description": "Aktive Steuerung ausdrücklich anfordern. Erfordert protokollierten Shadow-Vergleich, frische gültige Quellen, keine offene Recovery, bestätigte Reserven und ausgeschaltete konfigurierte Alt-Writer. Schaltet keine Alt-Automationen aus.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Integrationseintrag",
-          "description": "Genau einen geladenen EcoFlow-Smart-Charge-Eintrag auswählen."
-        },
-        "confirmed": {
-          "name": "Ausdrücklich bestätigen",
-          "description": "Nur nach vollständiger Sicherheitsprüfung bewusst auf wahr setzen; kein Standard-Opt-in."
-        },
-        "commissioning_confirmed": {
-          "name": "Externe Inbetriebnahme bestätigt",
-          "description": "Nur nach separat freigegebener und dokumentierter unabhängiger Altlogik-, Zähler- und Geräteprüfung bestätigen. Keine automatische Paritätsprüfung; kopierte native Werte genügen nicht."
-        }
-      }
-    },
-    "confirm_recovery": {
-      "name": "Exklusive Wiederherstellung autorisieren",
-      "description": "Gespeicherte individuelle Reserven außerhalb von Shadow mit exklusiver Writer-Freigabe wiederherstellen. Eine Quittung ist kein Readback; unvollständige Wiederherstellung bleibt offen. Startet keine Ladung.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Integrationseintrag",
-          "description": "Genau einen geladenen EcoFlow-Smart-Charge-Eintrag auswählen."
-        },
-        "confirmed": {
-          "name": "Ausdrücklich bestätigen",
-          "description": "Nur nach vollständiger Sicherheitsprüfung bewusst auf wahr setzen; kein Standard-Opt-in."
-        }
-      }
-    },
-    "record_shadow_comparison": {
-      "name": "Shadow-Vergleich protokollieren",
-      "description": "Vergleicht operatorseitige Werte nur mit der nativen Ausgabe. Prüft nicht Herkunft oder Altlogik-Parität; unabhängige Inbetriebnahme bleibt ein externes Freigabegate. Keine Gerätebefehle.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Integrationseintrag",
-          "description": "Genau einen geladenen EcoFlow-Smart-Charge-Eintrag auswählen."
-        },
-        "expected": {
-          "name": "Erwarteter Vergleich",
-          "description": "Mapping mit allowed, reason, profile_valid, advantage (Zahl oder null), net_saving. Ungerundete Werte verwenden."
-        }
-      }
-    },
-    "import_state": {
-      "name": "Migrationszustand prüfen/importieren",
-      "description": "Versionierte Einstellungen, Lernwerte, Sitzung und Marker in Shadow validieren. Standard ist reine Vorschau; apply=true speichert ohne Gerätebefehle.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Integrationseintrag",
-          "description": "Genau einen geladenen EcoFlow-Smart-Charge-Eintrag auswählen."
-        },
-        "payload": {
-          "name": "Versionierter Zustand",
-          "description": "Vollständiger geprüfter Importumschlag, keine rohen HA-Storage-/Backup-Daten."
-        },
-        "apply": {
-          "name": "Geprüfte Vorschau anwenden",
-          "description": "Falsch belassen für Vorschau. Wahr erst nach privatem Wertevergleich."
         }
       }
     }
@@ -212,9 +146,6 @@
       },
       "sources_valid": {
         "name": "Quellen gültig"
-      },
-      "writer_locked": {
-        "name": "Writer gesperrt"
       },
       "permission": {
         "name": "Ladefreigabe"

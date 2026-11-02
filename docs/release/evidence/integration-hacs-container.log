@@ -1,2 +1,0 @@
-::DEBUG:: Using selector: EpollSelector
-::ERROR:: No GitHub token found, use env GITHUB_TOKEN to set this.

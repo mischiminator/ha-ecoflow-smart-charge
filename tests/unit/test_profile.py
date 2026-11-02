@@ -1,4 +1,4 @@
-"""Synthetic energy rows, not household traces; see docs/core/PROVENANCE.md."""
+"""Synthetic energy rows, not household traces."""
 
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo

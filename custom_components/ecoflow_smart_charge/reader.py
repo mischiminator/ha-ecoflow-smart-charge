@@ -159,20 +159,14 @@ class SourceReader:
         self.settings = {}
 
     def selected_ids(self):
-        result = []
-        for key, value in self.entry.data.items():
-            if key.endswith("_entity") and isinstance(value, str):
-                result.append(value)
-            if key.endswith("_entities") and isinstance(value, list):
-                result.extend(value)
-        return result
+        from .config_flow import SINGLES, TRIPLES
 
-    def ownership(self):
-        writers = self.entry.data.get("legacy_writer_entities")
-        # Empty selection cannot prove exclusivity; commissioning must select known writers.
-        if not isinstance(writers, list) or not writers:
-            return False
-        return all((s := self.hass.states.get(e)) is not None and s.state == "off" for e in writers)
+        data = self.entry.data
+        result = [data[k] for k in SINGLES if isinstance(data.get(k), str)]
+        for key in TRIPLES:
+            if isinstance(data.get(key), list):
+                result.extend(data[key])
+        return result
 
     def numeric(self, key, now, age, *, low=0, high=1000, units=None):
         state = self.hass.states.get(key)
@@ -189,7 +183,6 @@ class SourceReader:
         data = self.entry.data
         settings = {**self.entry.options, **self.settings}
         gate = {
-            "owned": self.ownership(),
             "master": settings.get("master", False),
             "allowed": False,
             "valid": False,
@@ -320,7 +313,7 @@ class SourceReader:
             plan = decide(inp)
             self.last_plan = plan
             valid_reasons = {
-                "eligible_shadow_plan",
+                "eligible",
                 "already_full_for_solar_day",
                 "batteries_full",
                 "price_above_ceiling",
@@ -353,9 +346,6 @@ class SourceReader:
             self.input = None
             self.last_plan = None
             self.error = "source_unavailable_or_invalid"
-        # Source reads yield to HA; never authorize from the pre-await writer state.
-        # This synchronous final read covers successful and failed source refreshes.
-        gate["owned"] = self.ownership()
         return gate
 
     async def learn(self):

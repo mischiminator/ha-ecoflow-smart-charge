@@ -5,9 +5,7 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
-import voluptuous as vol
 from homeassistant.core import SupportsResponse
-from homeassistant.exceptions import ServiceValidationError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from test_source_pipeline import data_states
 
@@ -16,7 +14,7 @@ from custom_components.ecoflow_smart_charge.const import DOMAIN
 
 @pytest.mark.usefixtures("enable_custom_integrations")
 @pytest.mark.parametrize("requests", [1, 4])
-async def test_native_cutover_conflict_and_verified_restoration(hass, freezer, requests):
+async def test_native_activation_and_verified_restoration(hass, freezer, requests):
     freezer.move_to("2026-01-04T20:01:01+00:00")
     now = datetime.now(UTC)
     data = data_states(hass, now)
@@ -67,32 +65,10 @@ async def test_native_cutover_conflict_and_verified_restoration(hass, freezer, r
         await hass.services.async_call(DOMAIN, "recalculate", target, blocking=True)
         runtime = entry.runtime_data
         gate = runtime.last_snapshot
+        # Shadow evaluates the full chain but never sends commands.
         assert gate["valid"] and gate["allowed"] and calls == []
-        expected = {
-            k: gate[k] for k in ("allowed", "reason", "advantage", "net_saving", "profile_valid")
-        }
-        await hass.services.async_call(
-            DOMAIN, "record_shadow_comparison", {**target, "expected": expected}, blocking=True
-        )
-        # A copied native output is not an independent legacy commissioning check.
-        with pytest.raises(vol.Invalid):
-            await hass.services.async_call(
-                DOMAIN, "request_cutover", {**target, "confirmed": True}, blocking=True
-            )
-        with pytest.raises(ServiceValidationError):
-            await hass.services.async_call(
-                DOMAIN,
-                "request_cutover",
-                {**target, "confirmed": True, "commissioning_confirmed": False},
-                blocking=True,
-            )
-        assert runtime.mode == "shadow" and not runtime.authorized and calls == []
-        await hass.services.async_call(
-            DOMAIN,
-            "request_cutover",
-            {**target, "confirmed": True, "commissioning_confirmed": True},
-            blocking=True,
-        )
+        assert runtime.mode == "shadow" and runtime.status == "shadow"
+        await runtime.async_set_setting("mode", "active")
         await asyncio.gather(
             *(
                 hass.services.async_call(DOMAIN, "recalculate", target, blocking=True)
@@ -100,21 +76,21 @@ async def test_native_cutover_conflict_and_verified_restoration(hass, freezer, r
             )
         )
         assert len(calls) == 3 and runtime.journal.record
-        # A configured competing writer becoming enabled must prevent ANY further command.
-        hass.states.async_set("automation.legacy", "on")
-        await hass.services.async_call(DOMAIN, "recalculate", target, blocking=True)
-        assert len(calls) == 3
-        hass.states.async_set("automation.legacy", "off")
-        await runtime.async_set_shadow()
+        # Switching to shadow restores under active control before releasing it.
+        await runtime.async_set_setting("mode", "shadow")
         assert runtime.mode == "shadow" and runtime.journal.record
-        assert len(calls) == 6  # safe restoration under still-active exclusive ownership
+        assert len(calls) == 6
         freezer.tick(1)
         for entity in data["reserve_entities"]:
             hass.states.async_set(entity, "13", {"unit_of_measurement": "%"})
-        await hass.services.async_call(
-            DOMAIN, "confirm_recovery", {**target, "confirmed": True}, blocking=True
-        )
+        # Shadow only keeps the readback pending; active confirms it without a new charge.
+        await hass.services.async_call(DOMAIN, "recalculate", target, blocking=True)
+        assert runtime.status == "recovery_pending" and runtime.journal.record
+        await runtime.async_set_setting("master", False)
+        await runtime.async_set_setting("mode", "active")
+        await hass.services.async_call(DOMAIN, "recalculate", target, blocking=True)
         assert runtime.journal.record is None and len(calls) == 6
+        assert runtime.status == "restored"
         assert await hass.config_entries.async_unload(entry.entry_id)
         await hass.async_block_till_done()
         assert runtime.closed and not runtime.cancels and not runtime.listeners
