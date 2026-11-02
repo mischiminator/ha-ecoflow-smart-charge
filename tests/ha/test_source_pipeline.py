@@ -93,6 +93,22 @@ async def test_source_to_plan_selects_tariff_and_fails_closed_on_wrong_home(hass
         assert result["targets"] == dict.fromkeys(data["reserve_entities"], 100.0)
         assert reader.input.current_price_ct == 10
         assert reader.input.prices[1].price_ct == 50
+        # EcoFlow reports the reserve only every few minutes: a 190 s old reserve still plans.
+        later = now + timedelta(seconds=190)
+        with patch("custom_components.ecoflow_smart_charge.reader.dt_util.now", return_value=later):
+            result = await reader.refresh()
+        assert "detail" not in result and result["reason"] != "source_missing"
+        # Beyond the device age the blocking source is named and logged once.
+        stale = now + timedelta(seconds=700)
+        with (
+            patch("custom_components.ecoflow_smart_charge.reader.dt_util.now", return_value=stale),
+            patch("custom_components.ecoflow_smart_charge.reader._LOGGER") as logger,
+        ):
+            first = await reader.refresh()
+            second = await reader.refresh()
+        assert first["detail"] == "ValueError: source_stale: sensor.soc_0"
+        assert second["detail"] == first["detail"] and not second["valid"]
+        logger.warning.assert_called_once()
         reader.entry = MockConfigEntry(domain=DOMAIN, data={**data, "tariff_key": "Missing"})
         reader.prices_fetched = None
         assert not (await reader.refresh())["valid"]

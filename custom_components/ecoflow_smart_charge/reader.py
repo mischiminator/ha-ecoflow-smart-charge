@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime, timedelta
 
 from homeassistant.exceptions import HomeAssistantError
@@ -16,6 +17,11 @@ from .planner.core import (
     decide,
 )
 from .storage import finite
+
+_LOGGER = logging.getLogger(__name__)
+# EcoFlow reports SOC and backup reserve every few minutes; commands use their own
+# strict, post-intent readback in the runtime.
+DEVICE_MAX_AGE = 600
 
 
 def fresh(state, now, seconds):
@@ -165,6 +171,7 @@ class SourceReader:
         self.last_plan = None
         self.input = None
         self.error = None
+        self._logged_error = None
         self.settings = {}
 
     @property
@@ -190,9 +197,9 @@ class SourceReader:
     def numeric(self, key, now, age, *, low=0, high=1000, units=None):
         state = self.hass.states.get(key)
         if not fresh(state, now, age):
-            raise ValueError("source_stale")
+            raise ValueError(f"source_stale: {key}")
         if units is not None and state.attributes.get("unit_of_measurement") not in units:
-            raise ValueError("source_unit_invalid")
+            raise ValueError(f"source_unit_invalid: {key}")
         if units == {"kWh", "Wh"} and state.attributes.get("unit_of_measurement") == "Wh":
             low, high = low * 1000, high * 1000
         return finite(float(state.state), low, high)
@@ -212,7 +219,10 @@ class SourceReader:
         # Full-SOC evidence is independent of tariff/profile health. A failed
         # economic refresh must not lose the session's mandatory full marker.
         try:
-            socs = [self.numeric(e, now, 600, high=100, units={"%"}) for e in data["soc_entities"]]
+            socs = [
+                self.numeric(e, now, DEVICE_MAX_AGE, high=100, units={"%"})
+                for e in data["soc_entities"]
+            ]
             gate["full"] = bool(socs) and all(s >= 100 for s in socs)
         except KeyError, ValueError, TypeError:
             pass
@@ -254,12 +264,15 @@ class SourceReader:
             if price_state.attributes["unit_of_measurement"] == "EUR/kWh":
                 current *= 100
             profile = build_hourly_profile(self.rows, now=now)
-            soc = [self.numeric(e, now, 600, high=100, units={"%"}) for e in data["soc_entities"]]
+            soc = [
+                self.numeric(e, now, DEVICE_MAX_AGE, high=100, units={"%"})
+                for e in data["soc_entities"]
+            ]
             original = self.journal.record.reserves_before if self.journal.record else {}
             reserves = [
                 original.get(e)
                 if e in original
-                else self.numeric(e, now, 120, low=3, high=100, units={"%"})
+                else self.numeric(e, now, DEVICE_MAX_AGE, low=3, high=100, units={"%"})
                 for e in data["reserve_entities"]
             ]
             protection = all(
@@ -370,10 +383,13 @@ class SourceReader:
             HomeAssistantError,
             LookupError,
             RuntimeError,
-        ):
+        ) as err:
             self.input = None
             self.last_plan = None
-            self.error = "source_unavailable_or_invalid"
+            self.error = gate["detail"] = f"{type(err).__name__}: {err}"
+            if self.error != self._logged_error:
+                _LOGGER.warning("Cannot plan, charging blocked: %s", self.error)
+        self._logged_error = self.error
         return gate
 
     async def learn(self):
