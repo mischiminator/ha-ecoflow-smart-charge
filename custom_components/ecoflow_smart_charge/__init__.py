@@ -151,7 +151,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             async_track_time_change(hass, schedule, second=0),
             async_track_time_change(hass, learn, minute=5, second=0),
             async_track_time_change(hass, learn, hour=0, minute=10, second=0),
-            async_track_state_change_event(hass, reader.selected_ids(), schedule),
+            async_track_state_change_event(hass, reader.trigger_ids(), schedule),
             hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop),
             hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, learn),
         ]
