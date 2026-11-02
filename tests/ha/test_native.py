@@ -27,7 +27,6 @@ def mapping(hass):
         "forecast_tomorrow_entity": "sensor.forecast_tomorrow",
         "sun_entity": "sun.test",
         "tariff_key": "Synthetic",
-        "legacy_writer_entities": ["automation.legacy"],
     }
     specs = {
         "soc_entities": ("sensor", "soc", "50", "%"),
@@ -51,7 +50,6 @@ def mapping(hass):
         hass.states.async_set(data[key], "1", {"unit_of_measurement": "kWh"})
     hass.states.async_set("sensor.price", "0.1", {"unit_of_measurement": "EUR/kWh"})
     hass.states.async_set("binary_sensor.window", "on")
-    hass.states.async_set("automation.legacy", "off")
     hass.states.async_set(
         "sun.test", "above_horizon", {"next_setting": "2026-10-15T20:00:00+00:00"}
     )
@@ -59,7 +57,7 @@ def mapping(hass):
 
 
 @pytest.mark.usefixtures("enable_custom_integrations")
-async def test_valid_flow_and_options_do_not_allow_active_bypass(hass):
+async def test_valid_flow_starts_in_shadow_and_options_select_mode(hass):
     data = mapping(hass)
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}, data=data
@@ -67,20 +65,28 @@ async def test_valid_flow_and_options_do_not_allow_active_bypass(hass):
     assert result["type"] == "create_entry"
     entry = result["result"]
     await hass.async_block_till_done()
+    assert entry.runtime_data.mode == "shadow"
     options = await hass.config_entries.options.async_init(entry.entry_id)
     from homeassistant.data_entry_flow import InvalidData
 
     with pytest.raises(InvalidData):
         await hass.config_entries.options.async_configure(
-            options["flow_id"], user_input={"mode": "active"}
+            options["flow_id"], user_input={"mode": "armed"}
         )
-    assert entry.runtime_data.mode == "shadow"
+    options = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        options["flow_id"], user_input={"mode": "active"}
+    )
+    assert result["type"] == "create_entry"
+    await hass.async_block_till_done()
+    assert entry.options["mode"] == "active"
+    assert entry.runtime_data.mode == "active"
     assert await hass.config_entries.async_unload(entry.entry_id)
 
 
 @pytest.mark.usefixtures("enable_custom_integrations")
 async def test_real_entities_master_numbers_and_cleanup(hass):
-    entry = MockConfigEntry(domain=DOMAIN, data=mapping(hass), options={"mode": "active"})
+    entry = MockConfigEntry(domain=DOMAIN, data=mapping(hass))
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -114,6 +120,13 @@ async def test_real_entities_master_numbers_and_cleanup(hass):
     )
     assert float(hass.states.get(number).state) == 27
     assert runtime.mode == "shadow"
+    mode = entities[entry.entry_id + "_mode"]
+    await hass.services.async_call(
+        "select", "select_option", {"entity_id": mode, "option": "active"}, blocking=True
+    )
+    assert hass.states.get(mode).state == "active"
+    assert runtime.mode == "active" and entry.options["mode"] == "active"
+    assert entry.runtime_data is runtime
     assert len(runtime.cancels) >= 3
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
@@ -122,21 +135,13 @@ async def test_real_entities_master_numbers_and_cleanup(hass):
 
 
 @pytest.mark.usefixtures("enable_custom_integrations")
-async def test_entry_services_require_authorization_and_correct_target(hass):
+async def test_entry_service_requires_correct_target(hass):
     entry = MockConfigEntry(domain=DOMAIN, data=mapping(hass))
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
+    assert set(hass.services.async_services_for_domain(DOMAIN)) == {"recalculate"}
     with pytest.raises((vol.Invalid, ServiceValidationError)):
-        await hass.services.async_call(
-            DOMAIN, "confirm_recovery", {"config_entry_id": entry.entry_id}, blocking=True
-        )
-    with pytest.raises((vol.Invalid, ServiceValidationError)):
-        await hass.services.async_call(
-            DOMAIN,
-            "request_cutover",
-            {"config_entry_id": entry.entry_id, "confirmed": True},
-            blocking=True,
-        )
+        await hass.services.async_call(DOMAIN, "recalculate", {}, blocking=True)
     with pytest.raises((vol.Invalid, ServiceValidationError)):
         await hass.services.async_call(
             DOMAIN, "recalculate", {"config_entry_id": "missing"}, blocking=True

@@ -1,4 +1,4 @@
-"""Validated native source selectors and bounded options; no activation via config."""
+"""Validated native source selectors and bounded options."""
 
 from __future__ import annotations
 
@@ -37,6 +37,7 @@ SETTINGS = {
     "minimum_net_saving_ct": (3.0, 0, 1000),
     "capacity_kwh": (2.0, 0.01, 100),
 }
+MODES = ("shadow", "active")
 
 
 def validate_settings(values):
@@ -52,8 +53,8 @@ def validate_settings(values):
                 raise ValueError("invalid_setting")
     if "master" in values and not isinstance(values["master"], bool):
         raise ValueError("invalid_master")
-    if values.get("mode", "shadow") != "shadow":
-        raise ValueError("unsafe_mode")
+    if values.get("mode", "shadow") not in MODES:
+        raise ValueError("invalid_mode")
     if set(values) - set(SETTINGS) - {"master", "mode"}:
         raise ValueError("unknown_setting")
     return dict(values)
@@ -67,10 +68,8 @@ def validate_mapping(hass, data):
     try:
         selected = [(data[k], domain) for k, domain in SINGLES.items()]
         selected += [(e, domain) for k, domain in TRIPLES.items() for e in data[k]]
-        legacy = data["legacy_writer_entities"]
-        if not legacy or len(set(legacy)) != len(legacy) or not data["tariff_key"].strip():
+        if not data["tariff_key"].strip():
             return "source_invalid"
-        selected += [(e, "automation") for e in legacy]
         energy = [
             data["grid_energy_entity"],
             data["pv_entity"],
@@ -125,9 +124,6 @@ def mapping_schema():
             selector.EntitySelectorConfig(domain=[domain], multiple=True)
         )
     schema[vol.Required("tariff_key")] = str
-    schema[vol.Required("legacy_writer_entities")] = selector.EntitySelector(
-        selector.EntitySelectorConfig(domain=["automation"], multiple=True)
-    )
     return vol.Schema(schema)
 
 
@@ -206,7 +202,9 @@ class EcoFlowSmartChargeOptionsFlow(config_entries.OptionsFlow):
                 errors["base"] = str(err)
         schema = {
             vol.Optional("master", default=self.config_entry.options.get("master", False)): bool,
-            vol.Optional("mode", default="shadow"): vol.In(["shadow"]),
+            vol.Optional("mode", default=self.config_entry.options.get("mode", "shadow")): vol.In(
+                MODES
+            ),
         }
         for key, (default, lo, hi) in SETTINGS.items():
             schema[vol.Optional(key, default=self.config_entry.options.get(key, default))] = (

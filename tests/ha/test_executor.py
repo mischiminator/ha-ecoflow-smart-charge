@@ -30,7 +30,6 @@ async def rig():
     stamps = {e: datetime.now(UTC) for e in values}
     calls = []
     gate = {
-        "owned": True,
         "allowed": True,
         "valid": True,
         "master": True,
@@ -45,28 +44,24 @@ async def rig():
         calls.append((e, v))
 
     runtime = Runtime(
-        "shadow",
+        "active",
         journal,
         read,
         write,
         evaluate=lambda: dict(gate),
         writers=tuple(values),
-        save_comparison=lambda _: None,
     )
-    await runtime.async_recalculate()
-    await runtime.async_record_comparison({"allowed": True})
-    await runtime.async_request_cutover(confirmed=True, commissioning_confirmed=True)
     return runtime, disk, values, stamps, calls, gate
 
 
 @pytest.mark.asyncio
-async def test_no_cutover_without_confirmation_or_comparison():
-    runtime, _, _, _, calls, _ = await rig()
+async def test_shadow_mode_sends_no_commands():
+    runtime, _, values, _, calls, _ = await rig()
     runtime.mode = "shadow"
-    runtime.comparison = None
-    with pytest.raises(ValueError):
-        await runtime.async_request_cutover(confirmed=True, commissioning_confirmed=True)
-    assert calls == []
+    assert not await runtime.async_start(values)
+    await runtime.async_recalculate()
+    assert calls == [] and runtime.journal.record is None
+    assert runtime.status == "shadow"
 
 
 @pytest.mark.asyncio
@@ -92,14 +87,14 @@ async def test_ack_is_not_readback_and_retry_keeps_originals():
 
 
 @pytest.mark.asyncio
-async def test_save_failure_and_conflict_send_no_commands():
+async def test_save_failure_and_closed_gate_send_no_commands():
     runtime, disk, values, _, calls, gate = await rig()
     disk.fail = True
     with pytest.raises(OSError):
         await runtime.async_start(values)
     assert calls == [] and runtime.journal.record is None
     disk.fail = False
-    gate["owned"] = False
+    gate["master"] = False
     assert not await runtime.async_start(values)
     assert calls == []
 
@@ -116,12 +111,12 @@ async def test_stale_matching_readback_does_not_clear_restore():
 
 
 @pytest.mark.asyncio
-async def test_conflict_is_rechecked_between_each_device_write():
+async def test_charge_gate_is_rechecked_between_each_device_write():
     runtime, _, values, _, calls, gate = await rig()
 
     async def write(e, v):
         calls.append((e, v))
-        gate["owned"] = False
+        gate["allowed"] = False
 
     runtime._write = write
     assert not await runtime.async_start(values)

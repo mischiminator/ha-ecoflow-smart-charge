@@ -1,4 +1,4 @@
-"""Reconfiguration cannot bypass writer ownership or safety-state lock."""
+"""Reconfiguration cannot bypass reserve overlap checks or the safety-state lock."""
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -8,7 +8,7 @@ from custom_components.ecoflow_smart_charge.const import DOMAIN
 
 
 @pytest.mark.usefixtures("enable_custom_integrations")
-async def test_reconfigure_rejects_writer_overlap_and_corrupt_journal(hass):
+async def test_reconfigure_rejects_reserve_overlap_and_corrupt_journal(hass):
     data = mapping(hass)
     entry = MockConfigEntry(domain=DOMAIN, data=data)
     entry.add_to_hass(hass)

@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "EcoFlow Smart Charge",
-        "description": "Select existing entities. No cloud credentials. Use identical slot order in all battery lists. Starts in shadow only.",
+        "description": "Select existing entities. No cloud credentials. Use identical slot order in all battery lists. New entries start in shadow mode.",
         "data": {
           "name": "Name",
           "grid_energy_entity": "Required net grid energy meter",
@@ -21,13 +21,12 @@
           "sun_entity": "Sun state",
           "charge_energy_entities": "Three charge energy sources (slot order)",
           "discharge_energy_entities": "Three discharge energy sources (slot order)",
-          "tariff_key": "Explicit tariff/home key",
-          "legacy_writer_entities": "Legacy price-charge writers to interlock"
+          "tariff_key": "Explicit tariff/home key"
         }
       },
       "reconfigure": {
         "title": "Reconfigure sources",
-        "description": "Only without a pending session. Preserve slot order and repeat shadow comparison afterwards.",
+        "description": "Only without a pending session. Preserve slot order.",
         "data": {
           "name": "Name",
           "grid_energy_entity": "Required net grid energy meter",
@@ -44,15 +43,14 @@
           "sun_entity": "Sun state",
           "charge_energy_entities": "Three charge energy sources (slot order)",
           "discharge_energy_entities": "Three discharge energy sources (slot order)",
-          "tariff_key": "Explicit tariff/home key",
-          "legacy_writer_entities": "Legacy price-charge writers to interlock"
+          "tariff_key": "Explicit tariff/home key"
         }
       }
     },
     "error": {
       "three_batteries_required": "Select exactly three entities in each battery list.",
       "duplicate_reserves": "Each entity in a battery list must be distinct.",
-      "source_invalid": "Missing, unavailable, wrong or duplicate source, or invalid tariff/writer selection.",
+      "source_invalid": "Missing, unavailable, wrong or duplicate source, or empty tariff key.",
       "unit_invalid": "Source unit or value is invalid."
     },
     "abort": {
@@ -65,12 +63,12 @@
     "step": {
       "init": {
         "title": "Controller options",
-        "description": "Active control requires explicitly confirmed safe cutover. Migration must preserve existing values instead of replacing them with defaults.",
+        "description": "Shadow calculates the plan without device commands; active controls the battery reserves.",
         "data": {
           "mode": "Controller mode",
           "minimum_price_advantage_percent": "Minimum price advantage (%)",
           "charge_ceiling_ct": "Charge price ceiling (ct/kWh)",
-          "master": "Allow price charging (not cutover approval)",
+          "master": "Allow price charging",
           "efficiency": "Total efficiency (fraction 0..1)",
           "wear_cost_ct": "Wear (ct/kWh delivered)",
           "minimum_net_saving_ct": "Minimum net saving (ct/kWh delivered)",
@@ -81,82 +79,18 @@
     "error": {
       "invalid_setting": "Invalid or non-finite setting outside supported bounds.",
       "invalid_master": "Master must be a boolean.",
-      "unsafe_mode": "Activation requires explicitly confirmed safe cutover.",
+      "invalid_mode": "Mode must be shadow or active.",
       "unknown_setting": "Unknown setting."
     }
   },
   "services": {
     "recalculate": {
       "name": "Recalculate plan",
-      "description": "Refresh and evaluate the configured sources through the runtime. Shadow never sends hardware commands; in active mode normal safety and recovery gates still apply.",
+      "description": "Refresh and evaluate the configured sources through the runtime. Shadow never sends device commands; in active mode the normal safety and recovery gates apply.",
       "fields": {
         "config_entry_id": {
           "name": "Integration entry",
           "description": "Select exactly one loaded EcoFlow Smart Charge entry."
-        }
-      }
-    },
-    "request_cutover": {
-      "name": "Request supervised cutover",
-      "description": "Explicitly request active control. Requires recorded shadow comparison, fresh valid sources, no pending recovery, confirmed reserves and all configured legacy writers off. Does not disable legacy automations.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Integration entry",
-          "description": "Select exactly one loaded EcoFlow Smart Charge entry."
-        },
-        "confirmed": {
-          "name": "Explicit confirmation",
-          "description": "Intentionally set true only after all safety checks; never default opt-in."
-        },
-        "commissioning_confirmed": {
-          "name": "External commissioning confirmed",
-          "description": "Attest only after separately authorized and documented independent legacy, meter and device checks. Not automatic parity verification; copied native values are insufficient."
-        }
-      }
-    },
-    "confirm_recovery": {
-      "name": "Authorize exclusive recovery",
-      "description": "Explicitly authorize restoration of saved individual reserves outside shadow, only with exclusive writer ownership. Acknowledgement is not readback; incomplete restores remain pending. Never starts charging.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Integration entry",
-          "description": "Select exactly one loaded EcoFlow Smart Charge entry."
-        },
-        "confirmed": {
-          "name": "Explicit confirmation",
-          "description": "Intentionally set true only after all safety checks; never default opt-in."
-        }
-      }
-    },
-    "record_shadow_comparison": {
-      "name": "Record shadow comparison",
-      "description": "Matches operator-supplied values only to native output. Does not verify provenance or legacy parity; independent commissioning remains an external authorization gate. No hardware commands.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Integration entry",
-          "description": "Select exactly one loaded EcoFlow Smart Charge entry."
-        },
-        "expected": {
-          "name": "Expected comparison",
-          "description": "Mapping containing allowed, reason, profile_valid, advantage (number or null), net_saving. Use unrounded values."
-        }
-      }
-    },
-    "import_state": {
-      "name": "Preview/import migration state",
-      "description": "Validate versioned settings, learning, session and marker in shadow. Preview is default; apply=true persists without device commands.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Integration entry",
-          "description": "Select exactly one loaded EcoFlow Smart Charge entry."
-        },
-        "payload": {
-          "name": "Versioned state",
-          "description": "Complete validated import envelope, not raw HA storage or backup data."
-        },
-        "apply": {
-          "name": "Apply reviewed preview",
-          "description": "Leave false for preview. Set true only after privately comparing all values."
         }
       }
     }
@@ -212,9 +146,6 @@
       },
       "sources_valid": {
         "name": "Sources valid"
-      },
-      "writer_locked": {
-        "name": "Writer locked"
       },
       "permission": {
         "name": "Charge permission"

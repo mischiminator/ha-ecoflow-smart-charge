@@ -20,7 +20,6 @@ def data_states(hass, now):
         "forecast_today_entity": "sensor.forecast",
         "forecast_remaining_entity": "sensor.remaining",
         "forecast_tomorrow_entity": "sensor.tomorrow",
-        "legacy_writer_entities": ["automation.legacy"],
     }
     for kind, domain, value, unit in [
         ("soc", "sensor", "50", "%"),
@@ -39,7 +38,6 @@ def data_states(hass, now):
         )
     hass.states.async_set("sensor.price", "0.10", {"unit_of_measurement": "EUR/kWh"})
     hass.states.async_set("binary_sensor.window", "on")
-    hass.states.async_set("automation.legacy", "off")
     hass.states.async_set(
         "sun.test", "above_horizon", {"next_setting": (now + timedelta(hours=6)).isoformat()}
     )

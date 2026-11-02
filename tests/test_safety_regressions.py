@@ -106,18 +106,18 @@ async def test_restore_marks_readback_pending_until_a_second_confirmed_read() ->
     stamps = {e: datetime.now(UTC) for e in originals}
     calls = []
     runtime = Runtime(
-        "shadow",
+        "active",
         store,
         lambda e: (values[e], stamps[e]),
         lambda e, v: calls.append((e, v)),
         writers=tuple(originals),
-        evaluate=lambda: {"owned": True},
+        evaluate=dict,
     )
-    assert not await runtime.async_confirm_recovery(confirmed=True)
-    assert store.record is not None and runtime.mode == "shadow"
+    assert not await runtime.async_restore()
+    assert store.record is not None
     assert store.record.phase == "restore_pending"
     assert len(calls) == 3
     values.update(originals)
     stamps.update({e: datetime.now(UTC) for e in originals})
-    assert await runtime.async_confirm_recovery(confirmed=True)
-    assert store.record is None and runtime.mode == "shadow"
+    assert await runtime.async_restore()
+    assert store.record is None and runtime.status == "restored"

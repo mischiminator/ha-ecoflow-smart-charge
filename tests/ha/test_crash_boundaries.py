@@ -1,8 +1,9 @@
-"""Crash boundaries and pending unload remain recoverable, never implicit active."""
+"""Crash boundaries and pending unload remain recoverable."""
 
 import asyncio
 from copy import deepcopy
 from datetime import UTC, datetime
+from types import SimpleNamespace
 
 import pytest
 
@@ -31,24 +32,19 @@ async def setup():
     stamps = {e: datetime.now(UTC) for e in values}
     calls = []
     gate = {
-        "owned": True,
         "valid": True,
         "master": True,
         "allowed": True,
         "solar_day": "2026-01-04",
     }
     runtime = Runtime(
-        "shadow",
+        "active",
         journal,
         lambda e: (values[e], stamps[e]),
         lambda e, v: calls.append((e, v)),
         writers=tuple(values),
         evaluate=lambda: gate.copy(),
-        save_comparison=lambda _: None,
     )
-    await runtime.async_recalculate()
-    await runtime.async_record_comparison({"allowed": True})
-    await runtime.async_request_cutover(confirmed=True, commissioning_confirmed=True)
     return runtime, disk, values, stamps, calls, gate
 
 
@@ -60,14 +56,13 @@ async def test_cancelled_initial_save_sends_zero_commands():
     assert calls == [] and r.journal.record is None
 
 
-async def test_failed_unload_keeps_explicit_recovery_usable():
+async def test_failed_unload_keeps_recovery_usable():
     r, _disk, values, _stamps, calls, _ = await setup()
     await r.async_start(values)
     assert not await r.async_close()
-    r.mode = "shadow"
-    r.authorized = False
-    assert not r.closed
-    assert not await r.async_confirm_recovery(confirmed=True)
+    assert not r.closed and r.mode == "active"
+    assert r.status == "recovery_pending"
+    assert not await r.async_restore()
     assert len(calls) >= 6
 
 
@@ -120,9 +115,16 @@ async def test_full_marker_is_saved_before_restore_command_and_survives_clear():
     assert disk.data["session"] is None
 
 
-@pytest.mark.parametrize("operation", ["async_close", "async_set_shadow", "master_off"])
-async def test_stop_persistence_failure_still_revokes_active_authorization(operation):
+class Entries:
+    def async_update_entry(self, entry, *, options):
+        entry.options = options
+
+
+@pytest.mark.parametrize(("key", "value"), [("mode", "shadow"), ("master", False)])
+async def test_stop_persistence_failure_still_persists_the_stop(key, value):
     r, disk, values, _stamps, calls, _gate = await setup()
+    r.entry = SimpleNamespace(options={"master": True, "mode": "active"})
+    r.hass = SimpleNamespace(config_entries=Entries())
     await r.async_start(values)
 
     async def failed_save(_data):
@@ -130,13 +132,11 @@ async def test_stop_persistence_failure_still_revokes_active_authorization(opera
 
     disk.async_save = failed_save
     with pytest.raises(OSError):
-        if operation == "master_off":
-            await r.async_set_setting("master", False)
-        else:
-            await getattr(r, operation)()
-    assert r.mode == "shadow"
-    assert not r.authorized
+        await r.async_set_setting(key, value)
+    assert r.entry.options[key] == value
     assert r.journal.record is not None
-    before = len(calls)
-    await r.async_retry_charge()
-    assert len(calls) == before
+    if key == "mode":
+        assert r.mode == "shadow"
+        before = len(calls)
+        await r.async_retry_charge()
+        assert len(calls) == before

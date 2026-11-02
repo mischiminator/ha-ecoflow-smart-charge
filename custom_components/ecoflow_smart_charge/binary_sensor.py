@@ -9,7 +9,6 @@ KEYS = {
     "recovery_pending": "Recovery pending",
     "session_active": "Charging session active",
     "sources_valid": "Sources valid",
-    "writer_locked": "Writer locked",
     "permission": "Charge permission",
 }
 
@@ -30,11 +29,7 @@ class GateSensor(RuntimeEntity, BinarySensorEntity):
             return self.runtime.journal.record is not None or self.runtime.journal.blocked
         if self.key == "sources_valid":
             return bool(gate.get("valid"))
-        if self.key == "writer_locked":
-            return not gate.get("owned", False)
-        return bool(
-            gate.get("allowed") and gate.get("valid") and gate.get("master") and gate.get("owned")
-        )
+        return bool(gate.get("allowed") and gate.get("valid") and gate.get("master"))
 
 
 async def async_setup_entry(hass, entry, async_add_entities):

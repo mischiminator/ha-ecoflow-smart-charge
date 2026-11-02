@@ -1,4 +1,4 @@
-"""Legacy runtime facade now fails closed without an explicitly authorized adapter."""
+"""Runtime construction fails closed to shadow for unknown modes."""
 
 import pytest
 
@@ -14,8 +14,8 @@ class Disk:
         self.data = data
 
 
-@pytest.mark.parametrize("requested_mode", ["shadow", "armed", "active", "recovery"])
-async def test_constructor_mode_cannot_authorize_a_device_writer(requested_mode):
+@pytest.mark.parametrize("requested_mode", ["shadow", "armed", "recovery", None])
+async def test_unknown_constructor_mode_falls_back_to_shadow(requested_mode):
     journal = PersistentSessionStore(Disk())
     calls = []
     runtime = Runtime(requested_mode, journal, lambda _: 3, lambda *args: calls.append(args))
