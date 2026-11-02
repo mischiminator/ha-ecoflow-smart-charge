@@ -78,7 +78,12 @@ class PlanSensor(RuntimeEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        return card_sources(self.hass, self.entry.data) if self.key == "status" else None
+        if self.key == "status":
+            return card_sources(self.hass, self.entry.data)
+        if self.key == "reason":
+            # Which source blocks planning, e.g. "ValueError: source_stale: number.x".
+            return {"detail": (self.runtime.last_snapshot or {}).get("detail")}
+        return None
 
     @property
     def native_value(self):

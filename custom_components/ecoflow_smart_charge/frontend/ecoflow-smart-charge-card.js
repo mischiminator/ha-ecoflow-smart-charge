@@ -396,6 +396,7 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     const allowed = this._state('binary_sensor.permission')?.state === 'on';
     const session = this._state('binary_sensor.session_active')?.state === 'on';
     const reason = this._state('sensor.reason')?.state;
+    const detail = this._state('sensor.reason')?.attributes?.detail;
 
     this._refs.title.textContent = this._config.title || t.title;
     this._refs.subtitle.textContent = shadow ? t.shadowSubtitle : t.subtitle(batteries.length);
@@ -403,7 +404,7 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     const busy = ['charging', 'charge_pending', 'charge_blocked', 'restore_pending', 'recovery_pending', 'recovery_blocked'].includes(status);
     this._refs.status.textContent = !available ? t.unavailable : busy ? t.status[status] : shadow ? t.status.shadow : !on ? t.status.off : allowed ? t.status.allowed : t.status.waiting;
     this._refs.status.dataset.tone = ['charging', 'charge_pending'].includes(status) ? 'good' : !available || ['restore_pending', 'recovery_pending', 'recovery_blocked', 'charge_blocked'].includes(status) || reason === 'protection_mode_required' ? 'warn' : 'neutral';
-    this._refs.reason.textContent = !on && !session ? t.masterOff : t.reasons[reason] || (!reason || ['unknown', 'unavailable'].includes(reason) ? t.noPlan : EFS_GENERIC_REASONS.has(reason) ? t.dataMissing : reason);
+    this._refs.reason.textContent = !on && !session ? t.masterOff : t.reasons[reason] || (!reason || ['unknown', 'unavailable'].includes(reason) ? t.noPlan : EFS_GENERIC_REASONS.has(reason) ? t.dataMissing + (detail ? ` (${detail.replace(/^\w+: /, '')})` : '') : reason);
     this._refs.toggle.setAttribute('aria-pressed', String(on));
     this._refs.toggle.disabled = !available || this._toggling;
     this._refs.toggle.title = on ? t.toggleOff : t.toggleOn;

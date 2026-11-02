@@ -3,6 +3,14 @@
 Releases are created by pushing a `vX.Y.Z` tag; the release workflow checks the tag against
 `manifest.json`, `pyproject.toml` and this file and publishes the section below as release notes.
 
+## [1.0.1] - 2026-11-02
+
+### Fixed
+- Planning no longer stops with `source_missing` when EcoFlow reports the backup reserve only every few minutes: SOC and reserve may be up to 10 minutes old for planning. Commands still require a fresh device readback after each write.
+
+### Added
+- When planning is blocked by a source, the decision reason sensor names it in its `detail` attribute (e.g. `source_stale: number.…`), the dashboard card shows it, and the log gets one warning per new cause.
+
 ## [1.0.0] - 2026-11-02
 
 First stable release.
