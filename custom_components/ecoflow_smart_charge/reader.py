@@ -10,6 +10,7 @@ from homeassistant.util import dt as dt_util
 
 from .planner.core import (
     MAX_BATTERIES,
+    PRICE_MAX_AGE,
     Battery,
     PlannerInput,
     PricePoint,
@@ -19,8 +20,8 @@ from .planner.core import (
 from .storage import finite
 
 _LOGGER = logging.getLogger(__name__)
-# EcoFlow reports SOC and backup reserve every few minutes; commands use their own
-# strict, post-intent readback in the runtime.
+# EcoFlow reports SOC about every minute. Commands use their own strict, post-intent
+# readback in the runtime.
 DEVICE_MAX_AGE = 600
 
 
@@ -196,7 +197,10 @@ class SourceReader:
 
     def numeric(self, key, now, age, *, low=0, high=1000, units=None):
         state = self.hass.states.get(key)
-        if not fresh(state, now, age):
+        if age is None:
+            if state is None or state.state in ("unknown", "unavailable"):
+                raise ValueError(f"source_unavailable: {key}")
+        elif not fresh(state, now, age):
             raise ValueError(f"source_stale: {key}")
         if units is not None and state.attributes.get("unit_of_measurement") not in units:
             raise ValueError(f"source_unit_invalid: {key}")
@@ -256,7 +260,7 @@ class SourceReader:
             current = self.numeric(
                 data["price_entity"],
                 now,
-                900,
+                PRICE_MAX_AGE,
                 low=-100000,
                 high=100000,
                 units={"EUR/kWh", "ct/kWh"},
@@ -272,7 +276,8 @@ class SourceReader:
             reserves = [
                 original.get(e)
                 if e in original
-                else self.numeric(e, now, DEVICE_MAX_AGE, low=3, high=100, units={"%"})
+                # EcoFlow reports the backup reserve only when it changes: no age limit.
+                else self.numeric(e, now, None, low=3, high=100, units={"%"})
                 for e in data["reserve_entities"]
             ]
             # Shadow never commands the devices, so it plans without the Self-powered gate;

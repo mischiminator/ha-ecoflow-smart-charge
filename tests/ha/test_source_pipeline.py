@@ -3,6 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
+import pytest
 from homeassistant.core import SupportsResponse
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -98,6 +99,12 @@ async def test_source_to_plan_selects_tariff_and_fails_closed_on_wrong_home(hass
         with patch("custom_components.ecoflow_smart_charge.reader.dt_util.now", return_value=later):
             result = await reader.refresh()
         assert "detail" not in result and result["reason"] != "source_missing"
+        # The reserve is reported only when it changes: an hours-old value still plans.
+        assert reader.numeric(data["reserve_entities"][0], now + timedelta(hours=5), None) == 13
+        hass.states.async_set(data["reserve_entities"][0], "unavailable")
+        with pytest.raises(ValueError, match="source_unavailable"):
+            reader.numeric(data["reserve_entities"][0], now, None)
+        hass.states.async_set(data["reserve_entities"][0], "13", {"unit_of_measurement": "%"})
         # Beyond the device age the blocking source is named and logged once.
         stale = now + timedelta(seconds=700)
         with (
