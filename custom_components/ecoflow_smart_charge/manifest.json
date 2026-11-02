@@ -1,7 +1,7 @@
 {
   "domain": "ecoflow_smart_charge",
   "name": "EcoFlow Smart Charge",
-  "after_dependencies": ["recorder"],
+  "after_dependencies": ["frontend", "http", "recorder"],
   "codeowners": ["@mischiminator"],
   "config_flow": true,
   "documentation": "https://github.com/mischiminator/ha-ecoflow-smart-charge",
