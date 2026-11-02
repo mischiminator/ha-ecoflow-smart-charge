@@ -3,6 +3,7 @@ name: Validate
   pull_request:
   push:
   workflow_dispatch:
+  workflow_call:
   schedule:
     - cron: '17 3 * * 1'
 

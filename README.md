@@ -70,6 +70,10 @@ PV energy: select an existing Riemann-sum PV energy sensor to keep its history (
 
 The test runner disables IP sockets (local Unix sockets are allowed for HA). CI additionally runs hassfest and the HACS action; it never deploys or exercises hardware.
 
+## Releases
+
+Bump `version` in `custom_components/ecoflow_smart_charge/manifest.json` and `pyproject.toml`, add a `## [X.Y.Z]` section to `CHANGELOG.md`, merge, then push the tag `vX.Y.Z`. The release workflow reruns the full validation, checks tag, versions and changelog, and publishes the GitHub release with that section as notes and `ecoflow_smart_charge.zip` attached. HACS picks the release up automatically.
+
 ## Privacy
 
 Do not commit real entity mappings, household histories, tokens, serials, Home Assistant URLs or diagnostic exports. Diagnostics contain only mode, status and recovery state, never entity IDs.
