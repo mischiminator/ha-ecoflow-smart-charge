@@ -82,7 +82,9 @@ class PlanSensor(RuntimeEntity, SensorEntity):
             return card_sources(self.hass, self.entry.data)
         if self.key == "reason":
             # Which source blocks planning, e.g. "ValueError: source_stale: number.x".
-            return {"detail": (self.runtime.last_snapshot or {}).get("detail")}
+            snapshot = self.runtime.last_snapshot or {}
+            # self_powered stays visible in shadow, where it does not block the plan.
+            return {"detail": snapshot.get("detail"), "self_powered": snapshot.get("self_powered")}
         return None
 
     @property

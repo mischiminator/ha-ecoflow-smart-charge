@@ -22,6 +22,7 @@ const EFS_TEXT = {
     masterOff: 'Die automatische Netzladung ist ausgeschaltet. Solarladung bleibt davon unberührt.',
     noPlan: 'Warte auf eine gültige Planung.',
     dataMissing: 'Es fehlen gültige Preis-, Solar- oder Verbrauchsdaten.',
+    selfPoweredHint: 'Für den aktiven Modus müssen alle Akkus auf Self-powered stehen.',
     reasons: {
       eligible: 'Solar reicht nicht aus; Preis und erwartete Ersparnis passen.',
       target_reached: 'Netzanteil geladen – die Reserve wird bis zum Ende des Bestpreisfensters gehalten.',
@@ -111,6 +112,7 @@ const EFS_TEXT = {
     masterOff: 'Automatic grid charging is switched off. Solar charging is not affected.',
     noPlan: 'Waiting for a valid plan.',
     dataMissing: 'Valid price, solar or consumption data are missing.',
+    selfPoweredHint: 'Active mode needs every battery in Self-powered mode.',
     reasons: {
       eligible: 'Solar is not enough; price and expected saving fit.',
       target_reached: 'Grid share charged – the reserve is held until the best-price window ends.',
@@ -397,6 +399,7 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     const session = this._state('binary_sensor.session_active')?.state === 'on';
     const reason = this._state('sensor.reason')?.state;
     const detail = this._state('sensor.reason')?.attributes?.detail;
+    const selfPowered = this._state('sensor.reason')?.attributes?.self_powered;
 
     this._refs.title.textContent = this._config.title || t.title;
     this._refs.subtitle.textContent = shadow ? t.shadowSubtitle : t.subtitle(batteries.length);
@@ -405,6 +408,8 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     this._refs.status.textContent = !available ? t.unavailable : busy ? t.status[status] : shadow ? t.status.shadow : !on ? t.status.off : allowed ? t.status.allowed : t.status.waiting;
     this._refs.status.dataset.tone = ['charging', 'charge_pending'].includes(status) ? 'good' : !available || ['restore_pending', 'recovery_pending', 'recovery_blocked', 'charge_blocked'].includes(status) || reason === 'protection_mode_required' ? 'warn' : 'neutral';
     this._refs.reason.textContent = !on && !session ? t.masterOff : t.reasons[reason] || (!reason || ['unknown', 'unavailable'].includes(reason) ? t.noPlan : EFS_GENERIC_REASONS.has(reason) ? t.dataMissing + (detail ? ` (${detail.replace(/^\w+: /, '')})` : '') : reason);
+    // Shadow plans without Self-powered; say what active mode would still need.
+    if (shadow && selfPowered === false) this._refs.reason.textContent += ' ' + t.selfPoweredHint;
     this._refs.toggle.setAttribute('aria-pressed', String(on));
     this._refs.toggle.disabled = !available || this._toggling;
     this._refs.toggle.title = on ? t.toggleOff : t.toggleOn;

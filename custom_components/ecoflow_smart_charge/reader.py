@@ -275,6 +275,9 @@ class SourceReader:
                 else self.numeric(e, now, DEVICE_MAX_AGE, low=3, high=100, units={"%"})
                 for e in data["reserve_entities"]
             ]
+            # Shadow never commands the devices, so it plans without the Self-powered gate;
+            # active mode (and every start after switching to it) requires it.
+            shadow = settings.get("mode", "shadow") == "shadow"
             protection = all(
                 (s := self.hass.states.get(e)) is not None and s.state == "on"
                 for e in data["self_powered_entities"]
@@ -342,7 +345,7 @@ class SourceReader:
                 active_session=self.journal.record is not None,
                 full_marker_for_solar_day=self.journal.full_marker_day == solar_day,
                 sources_fresh=True,
-                protection_mode=protection,
+                protection_mode=protection or shadow,
                 current_price_ct=current,
                 below_horizon=sun.state == "below_horizon",
             )
@@ -364,7 +367,8 @@ class SourceReader:
             }
             gate.update(
                 allowed=plan.allowed,
-                valid=profile.valid and protection and plan.reason in valid_reasons,
+                valid=profile.valid and (protection or shadow) and plan.reason in valid_reasons,
+                self_powered=protection,
                 full=all(s >= 100 for s in soc),
                 solar_day=solar_day,
                 reason=plan.reason,
