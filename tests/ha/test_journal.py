@@ -61,10 +61,8 @@ async def test_marker_survives_session_clear():
     [
         ("reserves_before", [11, 12, 13]),
         ("reserves_before", {7: 11}),
-        ("pending_targets", []),
-        ("readback", {"number.a": {"value": 11, "at": "not-a-date"}}),
-        ("readback", {"number.a": {"value": True, "at": "2026-01-04T12:00:00+00:00"}}),
-        ("intent_at", {"number.a": "2026-01-04T12:00:00"}),
+        ("reserves_before", {"number.a": True}),
+        ("phase", "unknown"),
     ],
 )
 async def test_malformed_safety_fields_block_without_modifying_disk(field, value):

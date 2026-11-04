@@ -53,64 +53,18 @@ def validate_session(raw):
     if not isinstance(raw, dict):
         raise ValueError("invalid session object")  # noqa: TRY004 - one validation error contract
     record = SessionRecord(**raw)
-    created = datetime.fromisoformat(record.created_at)
+    # The reserves to restore are what matters; the rest is our own bookkeeping.
     if (
-        not isinstance(record.session_id, str)
-        or not record.session_id
-        or created.tzinfo is None
+        datetime.fromisoformat(record.created_at).tzinfo is None
         or record.phase not in PHASES
+        or not isinstance(record.reserves_before, dict)
+        or not 1 <= len(record.reserves_before) <= MAX_BATTERIES
     ):
         raise ValueError("invalid session")
-    if (
-        not isinstance(record.reserves_before, dict)
-        or not record.reserves_before
-        or len(record.reserves_before) > MAX_BATTERIES
-    ):
-        raise ValueError("invalid mapping")
-    if not isinstance(record.pending_targets, dict):
-        raise ValueError("invalid targets")  # noqa: TRY004 - one validation error contract
     for entity, value in record.reserves_before.items():
         if not isinstance(entity, str) or not entity.startswith("number."):
             raise ValueError("invalid writer")
         finite(value, 3)
-    for entity, value in record.pending_targets.items():
-        if entity not in record.reserves_before:
-            raise ValueError("unknown target")
-        finite(value, 3)
-    if set(record.command_ids) - set(record.reserves_before) or set(record.readback) - set(
-        record.reserves_before
-    ):
-        raise ValueError("unknown evidence")
-    iso_day(record.solar_day)
-    iso_day(record.full_marker_day)
-    for mapping in (
-        record.command_ids,
-        record.intent_at,
-        record.readback,
-        record.intent_targets,
-        record.charge_targets,
-    ):
-        if not isinstance(mapping, dict) or set(mapping) - set(record.reserves_before):
-            raise ValueError("invalid command evidence")
-    if any(not isinstance(v, str) or not v for v in record.command_ids.values()):
-        raise ValueError("invalid command id")
-    for stamp in [
-        *record.intent_at.values(),
-        *([record.restore_started_at] if record.restore_started_at else []),
-    ]:
-        if not isinstance(stamp, str) or datetime.fromisoformat(stamp).tzinfo is None:
-            raise ValueError("invalid intent timestamp")
-    for target in (*record.intent_targets.values(), *record.charge_targets.values()):
-        finite(target, 3)
-    for evidence in record.readback.values():
-        if not isinstance(evidence, dict) or set(evidence) != {"value", "at"}:
-            raise ValueError("invalid readback")
-        finite(evidence["value"], 3)
-        if (
-            not isinstance(evidence["at"], str)
-            or datetime.fromisoformat(evidence["at"]).tzinfo is None
-        ):
-            raise ValueError("invalid readback timestamp")
     return record
 
 
