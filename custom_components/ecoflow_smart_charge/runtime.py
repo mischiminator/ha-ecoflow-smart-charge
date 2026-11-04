@@ -43,6 +43,8 @@ class Runtime:
         self.status = "recovery_blocked" if journal.blocked else self._idle_status()
         self.last_snapshot = None
         self.closed = False
+        # Set by a failed unload: the timers may only finish the restore, never start anew.
+        self.draining = False
         self.cancels = []
         self.listeners = set()
         self.last_error = None
@@ -187,7 +189,7 @@ class Runtime:
 
     async def _start(self, reserves_before):
         gate = await self._gate()
-        if self.mode != "active" or not self._mapping_valid():
+        if self.draining or self.mode != "active" or not self._mapping_valid():
             return False
         if self.journal.record is not None:
             self.status = "recovery_pending"
@@ -294,6 +296,7 @@ class Runtime:
             finally:
                 safe = not self.journal.blocked and self.journal.record is None
                 self.closed = safe
+                self.draining = not safe
                 # After a failed unload the timers confirm or repeat the restore; at HA stop
                 # the journal carries it over the restart instead.
                 if safe or final:
