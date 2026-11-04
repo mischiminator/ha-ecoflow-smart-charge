@@ -3,6 +3,19 @@
 Releases are created by pushing a `vX.Y.Z` tag; the release workflow checks the tag against
 `manifest.json`, `pyproject.toml` and this file and publishes the section below as release notes.
 
+## [1.0.6] - 2026-11-04
+
+### Fixed
+- A confirmed charging session stays confirmed. EcoFlow reports the reserve only when it changes, so the master was commanded again every minute once the last report was older than 2 minutes; any report after the command now counts.
+- PV learning no longer stops for good when a day has too few hourly values (e.g. the integration's own PV sensor created in the afternoon): such a day is closed without a ratio after a week.
+- When an entry fails to unload during a session (e.g. options saved while charging), the restore is still confirmed or repeated, and no new session starts until Home Assistant restarts.
+
+### Changed
+- Tibber prices are fetched once per hour instead of every minute, and the session journal is only written when it changes.
+- Leaner code: duplicated input checks, unread journal fields and test-only code were removed. A missing journal file now means "no session" instead of blocking.
+- Texts: one name for the price charging switch ("Price charging enabled" / "Preisladung erlaubt"), the same words for the same settings in card, options and entities, German texts say "Akku" throughout, and the card is titled "EcoFlow Smart Charge" in German too.
+- The dashboard card no longer reads every saved value back over the REST API and no longer rejects a save when a value changed elsewhere in the meantime.
+
 ## [1.0.5] - 2026-11-02
 
 ### Fixed
