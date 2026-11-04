@@ -76,7 +76,6 @@ class PlannerInput:
     minimum_price_advantage_percent: float
     active_session: bool
     full_marker_for_solar_day: bool
-    sources_fresh: bool
     protection_mode: bool
     current_price_ct: float | None = None
     below_horizon: bool | None = None
@@ -160,14 +159,11 @@ def _reason(value: PlannerInput) -> str | None:
         value.best_price_window,
         value.active_session,
         value.full_marker_for_solar_day,
-        value.sources_fresh,
         value.protection_mode,
         value.below_horizon,
     )
     if any(type(f) is not bool for f in flags):
         return "required_state_invalid"
-    if not value.sources_fresh:
-        return "sources_stale"
     if not value.protection_mode:
         return "protection_mode_required"
     p = value.profile

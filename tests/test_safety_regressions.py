@@ -54,7 +54,6 @@ def _input(**changes) -> PlannerInput:
         "minimum_price_advantage_percent": 25.0,
         "active_session": False,
         "full_marker_for_solar_day": False,
-        "sources_fresh": True,
         "protection_mode": True,
     }
     data.update(changes)

@@ -49,7 +49,6 @@ def test_price_source_age_exclusive(age, allowed):
         ("batteries", (Battery(True, 3),) * 3),
         ("batteries", ()),
         ("batteries", (Battery(50, 3),) * 11),
-        ("sources_fresh", None),
         ("protection_mode", None),
         ("best_price_window", "on"),
         ("active_session", "off"),

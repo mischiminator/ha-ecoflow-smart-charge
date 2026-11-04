@@ -37,7 +37,6 @@ def candidate(**overrides):
         "minimum_price_advantage_percent": 20.0,
         "active_session": False,
         "full_marker_for_solar_day": False,
-        "sources_fresh": True,
         "protection_mode": True,
         "current_price_ct": 10.0,
         "below_horizon": False,

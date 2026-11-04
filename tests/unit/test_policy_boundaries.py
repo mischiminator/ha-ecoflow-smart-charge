@@ -91,7 +91,6 @@ def test_original_reserves_change_weighting_not_missing_energy():
 @pytest.mark.parametrize(
     "overrides,reason",
     [
-        ({"sources_fresh": False}, "sources_stale"),
         ({"protection_mode": False}, "protection_mode_required"),
         ({"best_price_window": False}, "outside_best_price_window"),
         ({"full_marker_for_solar_day": True}, "already_full_for_solar_day"),

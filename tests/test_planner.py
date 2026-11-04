@@ -61,7 +61,6 @@ def valid_input(**overrides: object) -> PlannerInput:
         "minimum_price_advantage_percent": 20.0,
         "active_session": False,
         "full_marker_for_solar_day": False,
-        "sources_fresh": True,
         "protection_mode": True,
         "current_price_ct": 10.0,
         "below_horizon": False,
@@ -134,11 +133,6 @@ class PolicyTests(unittest.TestCase):
             )
         )
         self.assertEqual(ended.reason, "outside_best_price_window")
-
-    def test_stale_or_invalid_sources_fail_closed(self) -> None:
-        result = decide(valid_input(sources_fresh=False))
-        self.assertFalse(result.allowed)
-        self.assertEqual(result.reason, "sources_stale")
 
 
 class LearningTests(unittest.TestCase):

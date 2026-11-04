@@ -197,7 +197,7 @@ const EFS_FIELDS = [
   ['capacity_kwh', 'kWh', 1],
 ];
 const EFS_GENERIC_REASONS = new Set([
-  'source_missing', 'sources_stale', 'prices_stale', 'current_price_mismatch', 'time_invalid',
+  'source_missing', 'prices_stale', 'current_price_mismatch', 'time_invalid',
   'sunset_invalid', 'required_state_invalid', 'battery_data_invalid', 'parameters_invalid',
   'forecast_profile_invalid', 'projection_invalid', 'price_data_invalid',
 ]);

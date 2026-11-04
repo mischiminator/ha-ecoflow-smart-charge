@@ -338,7 +338,6 @@ class SourceReader:
                 minimum_price_advantage_percent=settings["minimum_price_advantage_percent"],
                 active_session=self.journal.record is not None,
                 full_marker_for_solar_day=self.journal.full_marker_day == solar_day,
-                sources_fresh=True,
                 protection_mode=protection or shadow,
                 current_price_ct=current,
                 below_horizon=sun.state == "below_horizon",
