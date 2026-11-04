@@ -11,4 +11,4 @@ class RecalculateButton(RuntimeEntity, ButtonEntity):
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    async_add_entities([RecalculateButton(entry, "recalculate", "Recalculate")])
+    async_add_entities([RecalculateButton(entry, "recalculate")])

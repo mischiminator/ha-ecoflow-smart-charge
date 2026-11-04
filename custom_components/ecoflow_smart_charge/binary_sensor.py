@@ -4,13 +4,13 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 
 from .entity import RuntimeEntity
 
-KEYS = {
-    "shadow_active": "Shadow active",
-    "recovery_pending": "Recovery pending",
-    "session_active": "Charging session active",
-    "sources_valid": "Sources valid",
-    "permission": "Charge permission",
-}
+KEYS = (
+    "shadow_active",
+    "recovery_pending",
+    "session_active",
+    "sources_valid",
+    "permission",
+)
 
 
 class GateSensor(RuntimeEntity, BinarySensorEntity):
@@ -33,4 +33,4 @@ class GateSensor(RuntimeEntity, BinarySensorEntity):
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    async_add_entities([GateSensor(entry, key, name) for key, name in KEYS.items()])
+    async_add_entities([GateSensor(entry, key) for key in KEYS])
