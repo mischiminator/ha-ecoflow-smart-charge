@@ -104,7 +104,6 @@ class Runtime:
                     and (now - datetime.fromisoformat(started)).total_seconds() >= UNCHANGED_GRACE
                 ):
                     return False
-            await self.journal.async_evidence(entity, value, stamp.isoformat())
             return True
         except TypeError, ValueError, AttributeError, KeyError:
             return False

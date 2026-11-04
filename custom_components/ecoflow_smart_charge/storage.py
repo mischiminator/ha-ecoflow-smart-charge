@@ -7,7 +7,6 @@ from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, date, datetime
 from math import isfinite
 from typing import Any, Protocol
-from uuid import uuid4
 
 from .planner.core import MAX_BATTERIES
 
@@ -38,6 +37,7 @@ class SessionRecord:
     pending_targets: dict[str, float]
     phase: str = "intent_persisted"
     full_marker_day: str | None = None
+    # No longer written; kept so journals from older versions still load.
     command_ids: dict[str, str] = field(default_factory=dict)
     readback: dict[str, dict] = field(default_factory=dict)
     solar_day: str | None = None
@@ -245,13 +245,11 @@ class PersistentSessionStore:
     async def async_intent(self, entity, target, phase):
         if self.record is None:
             raise ValueError("no session")
-        ids = {**self.record.command_ids, entity: uuid4().hex}
         await self._save(
             replace(
                 self.record,
                 phase=phase,
                 pending_targets={**self.record.pending_targets, entity: target},
-                command_ids=ids,
                 intent_at={**self.record.intent_at, entity: datetime.now(UTC).isoformat()},
                 intent_targets={**self.record.intent_targets, entity: target},
             )
@@ -262,14 +260,6 @@ class PersistentSessionStore:
             raise ValueError("no session")
         await self._save(
             validate_session(asdict(replace(self.record, charge_targets=dict(targets))))
-        )
-
-    async def async_evidence(self, entity, value, stamp):
-        record = self.record
-        if record is None:
-            raise ValueError("no session")
-        await self._save(
-            replace(record, readback={**record.readback, entity: {"value": value, "at": stamp}})
         )
 
     async def async_set_marker(self, day):

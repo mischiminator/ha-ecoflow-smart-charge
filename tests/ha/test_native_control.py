@@ -53,7 +53,7 @@ async def test_native_activation_and_verified_restoration(hass, freezer, request
         # The safety capture and per-target intent exist before transport invocation.
         record = entry.runtime_data.journal.record
         assert record.reserves_before == {e: 13.0 for e in data["reserve_entities"]}
-        assert call.data["entity_id"] in record.command_ids
+        assert call.data["entity_id"] in record.intent_at
         calls.append(dict(call.data))
 
     entry = MockConfigEntry(domain=DOMAIN, data=data, options={"master": True})
