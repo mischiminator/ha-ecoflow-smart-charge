@@ -589,7 +589,7 @@ if (!window.customCards.some(c => c.type === EFS_CARD)) {
   window.customCards.push({
     type: EFS_CARD,
     name: 'EcoFlow Smart Charge',
-    description: 'Solar- und preisgeführte Akku-Ladung der Integration EcoFlow Smart Charge.',
+    description: 'Solar- and price-led battery charging for EcoFlow Smart Charge.',
     preview: true,
     documentationURL: 'https://github.com/mischiminator/ha-ecoflow-smart-charge',
   });
