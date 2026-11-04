@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from math import ceil, floor, sqrt
+from math import floor, sqrt
 
 from .forecast import build_curve
 from .learning import correction_from_ratios, learn_pv_correction
@@ -236,11 +236,7 @@ def common_target(batteries, capacities, grid_kwh: float) -> float:
             c * max(level - b.soc, 0) / 100 for c, b in zip(capacities, batteries, strict=True)
         )
 
-    low, high = 0.0, 100.0
-    for _ in range(40):
-        middle = (low + high) / 2
-        low, high = (middle, high) if charged(middle) < grid_kwh else (low, middle)
-    return float(min(100, ceil(high - EPSILON)))
+    return float(next((level for level in range(101) if charged(level) >= grid_kwh - EPSILON), 100))
 
 
 def decide(value: PlannerInput) -> PlanResult:
