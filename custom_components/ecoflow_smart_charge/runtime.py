@@ -8,7 +8,6 @@ from uuid import uuid4
 
 from homeassistant.exceptions import HomeAssistantError
 
-from .planner.core import MAX_BATTERIES
 from .storage import finite
 
 # Forecasts move every quarter hour; smaller target changes are not worth a command.
@@ -69,13 +68,10 @@ class Runtime:
         return gate
 
     def _mapping_valid(self):
-        return (
-            1 <= len(self.writers) <= MAX_BATTERIES
-            and len(set(self.writers)) == len(self.writers)
-            and (
-                self.journal.record is None
-                or set(self.journal.record.reserves_before) == set(self.writers)
-            )
+        # Count and uniqueness are fixed by the config flow; a session must match the mapping.
+        return bool(self.writers) and (
+            self.journal.record is None
+            or set(self.journal.record.reserves_before) == set(self.writers)
         )
 
     async def _reported(self, entity, desired, *, unchanged_ok=False):
