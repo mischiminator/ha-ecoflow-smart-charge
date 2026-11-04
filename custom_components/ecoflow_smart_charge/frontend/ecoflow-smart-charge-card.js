@@ -22,7 +22,7 @@ const EFS_TEXT = {
     masterOff: 'Die Preisladung ist ausgeschaltet. Solarladung bleibt davon unberührt.',
     noPlan: 'Warte auf eine gültige Planung.',
     dataMissing: 'Es fehlen gültige Preis-, Solar- oder Verbrauchsdaten.',
-    selfPoweredHint: 'Für den aktiven Modus müssen alle Akkus auf Self-powered stehen.',
+    selfPoweredHint: 'Für den aktiven Modus müssen alle Akkus im Eigenverbrauchsmodus (Self-powered) sein.',
     reasons: {
       eligible: 'Solar reicht nicht aus; Preis und erwartete Ersparnis passen.',
       target_reached: 'Netzanteil geladen – die Reserve wird bis zum Ende des Bestpreisfensters gehalten.',
