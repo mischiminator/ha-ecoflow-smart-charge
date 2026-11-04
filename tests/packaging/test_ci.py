@@ -19,7 +19,7 @@ def test_ci_pins_actions_and_uses_locked_test_runner():
             assert re.search(r"@[0-9a-f]{40}$", step["uses"]), step["uses"]
     commands = "\n".join(s.get("run", "") for s in steps)
     assert "--require-hashes -r requirements-test.lock" in commands
-    assert "python tools/run_tests.py" in commands
+    assert "python -m pytest" in commands
     assert "python -m ruff check ." in commands
     assert "python -m ruff format --check ." in commands
     assert "requirements-lint.txt" in commands

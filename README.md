@@ -128,7 +128,7 @@ Diagnostics contain only mode, status and recovery state, never entity IDs.
 uv venv --python 3.14.7 .venv
 uv pip sync --python .venv/bin/python --require-hashes requirements-test.lock
 uv pip install --python .venv/bin/python -r requirements-lint.txt
-.venv/bin/python tools/run_tests.py
+.venv/bin/python -m pytest -q
 .venv/bin/python -m ruff check . && .venv/bin/python -m ruff format --check .
 ```
 
