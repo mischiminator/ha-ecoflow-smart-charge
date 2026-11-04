@@ -65,10 +65,7 @@
       }
     },
     "error": {
-      "invalid_setting": "Ungültiger oder nicht endlicher Wert außerhalb der Grenzen.",
-      "invalid_master": "Master muss ein Wahrheitswert sein.",
-      "invalid_mode": "Modus muss Shadow oder Aktiv sein.",
-      "unknown_setting": "Unbekannte Einstellung."
+      "invalid_setting": "Ungültiger oder nicht endlicher Wert außerhalb der Grenzen."
     }
   },
   "services": {

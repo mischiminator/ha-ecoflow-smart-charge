@@ -65,10 +65,7 @@
       }
     },
     "error": {
-      "invalid_setting": "Invalid or non-finite setting outside supported bounds.",
-      "invalid_master": "Master must be a boolean.",
-      "invalid_mode": "Mode must be shadow or active.",
-      "unknown_setting": "Unknown setting."
+      "invalid_setting": "Invalid or non-finite setting outside supported bounds."
     }
   },
   "services": {

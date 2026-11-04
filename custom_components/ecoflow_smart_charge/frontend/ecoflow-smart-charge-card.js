@@ -16,7 +16,7 @@ const EFS_TEXT = {
     status: {
       shadow: 'Shadow-Modus', off: 'Ausgeschaltet', waiting: 'Aktiv · wartet', allowed: 'Ladung freigegeben',
       charging: 'Netzladung läuft', charge_pending: 'Reserve wird gesetzt', charge_blocked: 'Ladung gesperrt',
-      restore_pending: 'Reserve wird zurückgestellt', restored: 'Reserve wiederhergestellt',
+      restore_pending: 'Reserve wird zurückgestellt',
       recovery_pending: 'Wiederherstellung offen', recovery_blocked: 'Wiederherstellung blockiert',
     },
     masterOff: 'Die Preisladung ist ausgeschaltet. Solarladung bleibt davon unberührt.',
@@ -35,7 +35,6 @@ const EFS_TEXT = {
       insufficient_priced_consumption: 'Im bekannten Preisausblick ist kein zusätzlicher Akku-Verbrauch prognostiziert.',
       nonpositive_reference_price: 'Der spätere Bezugspreis ist null oder negativ; der Preisvergleich sperrt die Netzladung.',
       price_advantage_too_low: 'Der Preisvorteil gegenüber dem späteren Netzbezug liegt unter deinem Mindestwert.',
-      price_advantage_invalid: 'Der eingestellte Mindest-Preisvorteil ist ungültig.',
       net_saving_too_low: 'Die erwartete Nettoersparnis ist zu gering.',
       protection_mode_required: 'Alle Akkus müssen im Eigenverbrauchsmodus (Self-powered) sein.',
       profile_invalid: 'Das Verbrauchsprofil hat noch zu wenig Verlauf (mindestens 3 Werte je Stunde).',
@@ -104,7 +103,7 @@ const EFS_TEXT = {
     status: {
       shadow: 'Shadow mode', off: 'Switched off', waiting: 'Active · waiting', allowed: 'Charging allowed',
       charging: 'Grid charging', charge_pending: 'Setting reserve', charge_blocked: 'Charging blocked',
-      restore_pending: 'Restoring reserve', restored: 'Reserve restored',
+      restore_pending: 'Restoring reserve',
       recovery_pending: 'Recovery pending', recovery_blocked: 'Recovery blocked',
     },
     masterOff: 'Price charging is switched off. Solar charging is not affected.',
@@ -123,7 +122,6 @@ const EFS_TEXT = {
       insufficient_priced_consumption: 'No additional battery consumption is forecast within the known prices.',
       nonpositive_reference_price: 'The later grid price is zero or negative; the price comparison blocks charging.',
       price_advantage_too_low: 'The price advantage is below your minimum.',
-      price_advantage_invalid: 'The configured minimum price advantage is invalid.',
       net_saving_too_low: 'The expected net saving is too low.',
       protection_mode_required: 'All batteries must be in Self-powered mode.',
       profile_invalid: 'The consumption profile needs more history (at least 3 values per hour).',
