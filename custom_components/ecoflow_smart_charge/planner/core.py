@@ -90,7 +90,6 @@ class PlanResult:
     avoided_price_ct: float
     net_saving_ct: float
     price_advantage_percent: float | None
-    command_plan: tuple[str, ...] = ()
     solar_day: str | None = None
     coverage_kwh: float = 0.0
     target_ac_kwh: float = 0.0

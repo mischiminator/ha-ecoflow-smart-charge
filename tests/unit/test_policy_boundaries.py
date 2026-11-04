@@ -123,9 +123,8 @@ def test_curve_196_elapsed_quarters_across_dst(day):
     assert curve.rows[-1].ts - curve.rows[0].ts == 195 * 900
 
 
-def test_no_coverage_is_not_full_coverage_and_no_command_is_embedded():
+def test_no_coverage_is_not_full_coverage():
     c = candidate()
     p = decide(replace(c, prices=c.prices[:1]))
     assert p.reason == "insufficient_priced_consumption"
     assert p.coverage_kwh == 0
-    assert p.command_plan == ()

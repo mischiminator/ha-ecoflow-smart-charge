@@ -83,11 +83,6 @@ class ProfileTests(unittest.TestCase):
 
 
 class PolicyTests(unittest.TestCase):
-    def test_shadow_can_plan_but_never_commands(self) -> None:
-        result = decide(valid_input())
-        self.assertTrue(result.allowed)
-        self.assertEqual(result.command_plan, ())
-
     def test_internal_price_gap_fails_closed(self) -> None:
         candidate = valid_input()
         prices = candidate.prices[:2] + (PricePoint(candidate.now + timedelta(hours=3), 30.0),)

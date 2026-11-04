@@ -59,4 +59,3 @@ def test_partial_tail_coverage_sqrt_target_and_individual_reserves():
     assert p.avoided_price_ct == 40
     assert p.cost_ct == pytest.approx(10 / 0.81 + 2)
     assert p.net_saving_ct == pytest.approx((40 - (10 / 0.81 + 2)) * 0.25 / 2.7)
-    assert p.command_plan == ()
