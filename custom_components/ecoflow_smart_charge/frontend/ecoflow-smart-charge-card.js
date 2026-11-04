@@ -88,7 +88,6 @@ const EFS_TEXT = {
     saved: 'Gespeichert und von Home Assistant bestätigt.',
     noChanges: 'Keine Änderungen – die aktuellen Einstellungen bleiben erhalten.',
     invalidNumbers: 'Bitte gültige Zahlen eingeben.',
-    changedOutside: 'Ein Wert wurde zwischenzeitlich außerhalb dieses Dialogs geändert. Bitte schließen und erneut öffnen.',
     partlyApplied: n => `${n} Änderung(en) wurden bereits übernommen. `,
     notConfirmed: e => `Home Assistant hat den neuen Wert nicht bestätigt: ${e}`,
     settingsUnavailable: e => `Konfiguration nicht verfügbar: ${e}`,
@@ -178,7 +177,6 @@ const EFS_TEXT = {
     saved: 'Saved and confirmed by Home Assistant.',
     noChanges: 'No changes – the current settings stay as they are.',
     invalidNumbers: 'Please enter valid numbers.',
-    changedOutside: 'A value was changed outside this dialog. Please close and open it again.',
     partlyApplied: n => `${n} change(s) were already applied. `,
     notConfirmed: e => `Home Assistant did not confirm the new value: ${e}`,
     settingsUnavailable: e => `Settings unavailable: ${e}`,
@@ -560,16 +558,9 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     for (const [key, , scale] of EFS_FIELDS) {
       const value = Number(this._refs[`field-${key}`].value) / scale;
       if (!Number.isFinite(value)) { this._feedback(t.invalidNumbers, true); return; }
-      if (Math.abs(value - this._snapshot[key]) > 1e-9) {
-        if (this._number('number.' + key) !== this._snapshot[key]) { this._feedback(t.changedOutside, true); return; }
-        edits.push([key, +value.toFixed(6)]);
-      }
+      if (Math.abs(value - this._snapshot[key]) > 1e-9) edits.push([key, +value.toFixed(6)]);
     }
     const enabled = this._refs.enabled.checked, mode = this._refs.mode.value;
-    if ((this._state('switch.master')?.state === 'on') !== this._snapshot.enabled || this._state('select.mode')?.state !== this._snapshot.mode) {
-      this._feedback(t.changedOutside, true);
-      return;
-    }
     this._saving = true;
     let applied = 0;
     this._refs.save.textContent = t.savingProgress;
