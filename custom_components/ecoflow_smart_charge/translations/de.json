@@ -12,7 +12,7 @@
           "forecast_entry": "Forecast.Solar-Eintrag",
           "prices_entry": "Tibber-Prices-Eintrag",
           "pv_entity": "Vorhandener PV-Energiezähler (optional)",
-          "tariff_key": "Tibber-Zuhause"
+          "tariff_key": "Tibber-Haushalt"
         },
         "data_description": {
           "pv_entity": "Übernimmt den Verlauf eines vorhandenen Riemann-PV-Sensors. Leer lassen, dann integriert die Integration die PV-Leistung der Batterien selbst (das Lastprofil braucht dann erst einige Tage Verlauf)."
@@ -28,7 +28,7 @@
           "forecast_entry": "Forecast.Solar-Eintrag",
           "prices_entry": "Tibber-Prices-Eintrag",
           "pv_entity": "Vorhandener PV-Energiezähler (optional)",
-          "tariff_key": "Tibber-Zuhause"
+          "tariff_key": "Tibber-Haushalt"
         },
         "data_description": {
           "pv_entity": "Übernimmt den Verlauf eines vorhandenen Riemann-PV-Sensors. Leer lassen, dann integriert die Integration die PV-Leistung der Batterien selbst (das Lastprofil braucht dann erst einige Tage Verlauf)."
@@ -43,7 +43,7 @@
     },
     "abort": {
       "already_configured": "Mindestens ein Reserve-Ziel gehört bereits zu einem anderen Eintrag.",
-      "recovery_pending": "Offene Recovery: Quellenzuordnung darf nicht geändert werden.",
+      "recovery_pending": "Offene Wiederherstellung: Quellenzuordnung darf nicht geändert werden.",
       "reconfigure_successful": "Quellen neu konfiguriert; Eintrag wird neu geladen."
     }
   },
@@ -71,7 +71,7 @@
   "services": {
     "recalculate": {
       "name": "Plan neu berechnen",
-      "description": "Quellen über die Runtime neu auswerten. Shadow sendet niemals Gerätebefehle; im aktiven Modus gelten die normalen Sicherheits- und Recovery-Sperren.",
+      "description": "Quellen neu auswerten. Shadow sendet niemals Gerätebefehle; im aktiven Modus gelten die normalen Sicherheits- und Wiederherstellungssperren.",
       "fields": {
         "config_entry_id": {
           "name": "Integrationseintrag",

@@ -70,7 +70,7 @@ const EFS_TEXT = {
     close: 'Schließen',
     intro: 'Änderungen werden erst mit „Speichern“ übernommen. Die Solar- und Wirtschaftlichkeitsprüfung bleibt immer aktiv.',
     master: 'Preisladung erlaubt',
-    mode: 'Controller-Modus',
+    mode: 'Steuerungsmodus',
     modes: { shadow: 'Shadow – nur planen', active: 'Aktiv – Reserven steuern' },
     fields: {
       charge_ceiling_ct: ['Maximaler Ladepreis', 'Endpreis inklusive variabler Preisbestandteile'],
