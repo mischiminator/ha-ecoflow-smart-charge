@@ -6,7 +6,7 @@ const EFS_CARD = 'ecoflow-smart-charge-card';
 
 const EFS_TEXT = {
   de: {
-    title: 'EcoFlow Preisladung',
+    title: 'EcoFlow Smart Charge',
     subtitle: n => `Solargeführt · ${n} ${n === 1 ? 'Akku' : 'Akkus'}`,
     shadowSubtitle: 'Shadow-Modus · keine Gerätebefehle',
     notFound: 'Keine EcoFlow-Smart-Charge-Instanz gefunden.',
