@@ -73,14 +73,8 @@ def join_statistics(raw, keys, zone):
         duplicates = set()
         for row in raw.get(key, []):
             try:
-                start = row["start"]
-                if isinstance(start, str):
-                    start = datetime.fromisoformat(start)
-                elif isinstance(start, (float, int)) and not isinstance(start, bool):
-                    start = datetime.fromtimestamp(start, UTC)
-                if start.tzinfo is None:
-                    continue
-                start = start.astimezone(UTC)
+                # The recorder returns period starts as UTC timestamps.
+                start = datetime.fromtimestamp(row["start"], UTC)
                 if start in series:
                     duplicates.add(start)
                     continue
@@ -142,10 +136,6 @@ async def read_daily_pv(hass, entity, start, end):
     for row in raw.get(entity, []):
         try:
             stamp = row["start"]
-            if isinstance(stamp, str):
-                stamp = datetime.fromisoformat(stamp).timestamp()
-            elif isinstance(stamp, datetime):
-                stamp = stamp.timestamp()
             if not start.timestamp() <= stamp < end.timestamp():
                 continue
             if stamp in values:
