@@ -6,7 +6,6 @@ from copy import deepcopy
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, date, datetime
 from math import isfinite
-from typing import Any, Protocol
 
 from .planner.core import MAX_BATTERIES
 
@@ -46,11 +45,6 @@ class SessionRecord:
     intent_targets: dict[str, float] = field(default_factory=dict)
     # Reserve each battery is charged to; empty in older journals means 100%.
     charge_targets: dict[str, float] = field(default_factory=dict)
-
-
-class StoreProtocol(Protocol):
-    async def async_load(self) -> dict[str, Any] | None: ...
-    async def async_save(self, data: dict[str, Any]) -> None: ...
 
 
 def validate_session(raw):
@@ -153,7 +147,7 @@ def validate_learning(raw):
 class PersistentSessionStore:
     """Never commit memory before save. Malformed records remain blocked on disk."""
 
-    def __init__(self, store: StoreProtocol, *, expected_exists=False):
+    def __init__(self, store, *, expected_exists=False):
         self._store = store
         self.expected_exists = expected_exists
         self.record = None
