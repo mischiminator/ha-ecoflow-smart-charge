@@ -69,12 +69,6 @@ async def test_failed_unload_keeps_recovery_usable():
     assert len(calls) >= 6
 
 
-async def test_restart_of_missing_existing_journal_is_blocked():
-    journal = PersistentSessionStore(Disk(), expected_exists=True)
-    await journal.async_load()
-    assert journal.blocked
-
-
 async def test_readback_from_before_latest_command_does_not_confirm(freezer):
     r, _disk, values, stamps, calls, _ = await setup()
     originals = dict(values)

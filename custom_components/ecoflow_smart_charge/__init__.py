@@ -70,16 +70,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from .runtime import Runtime
     from .storage import PersistentSessionStore
 
-    journal = PersistentSessionStore(
-        Store(hass, STORE_VERSION, f"{DOMAIN}.{entry.entry_id}"),
-        expected_exists=entry.data.get("journal_initialized", False),
-    )
+    journal = PersistentSessionStore(Store(hass, STORE_VERSION, f"{DOMAIN}.{entry.entry_id}"))
     await journal.async_load()
-    if not entry.data.get("journal_initialized", False) and not journal.blocked:
-        await journal._save(journal.record)
-        hass.config_entries.async_update_entry(
-            entry, data={**entry.data, "journal_initialized": True}
-        )
     if "battery_devices" in entry.data and journal.record is None and not journal.blocked:
         # Follow entity renames; a pending session keeps the mapping it saved reserves for.
         from .sources import SourceMissing, resolve

@@ -30,7 +30,7 @@ async def test_restart_after_each_durable_charge_boundary(save_number, prior_wri
     assert len(calls) == prior_writes
     assert disk.data["session"]["reserves_before"] == originals
     disk.async_save = save
-    journal = PersistentSessionStore(disk, expected_exists=True)
+    journal = PersistentSessionStore(disk)
     await journal.async_load()
     gate["allowed"] = False
 

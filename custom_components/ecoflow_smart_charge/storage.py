@@ -101,9 +101,8 @@ def validate_learning(raw):
 class PersistentSessionStore:
     """Never commit memory before save. Malformed records remain blocked on disk."""
 
-    def __init__(self, store, *, expected_exists=False):
+    def __init__(self, store):
         self._store = store
-        self.expected_exists = expected_exists
         self.record = None
         self.learning = validate_learning({})
         self.full_marker_day = None
@@ -122,9 +121,7 @@ class PersistentSessionStore:
     async def async_load(self):
         try:
             raw = await self._store.async_load()
-            if raw is None:  # New store only; {} is not treated as safe empty state.
-                if self.expected_exists:
-                    self.blocked = True
+            if raw is None:  # No file yet; {} is not treated as safe empty state.
                 return None
             if (
                 not isinstance(raw, dict)

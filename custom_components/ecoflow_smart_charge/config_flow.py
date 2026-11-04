@@ -246,8 +246,7 @@ class EcoFlowSmartChargeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             from .storage import PersistentSessionStore
 
             journal = PersistentSessionStore(
-                Store(self.hass, STORE_VERSION, f"{DOMAIN}.{entry.entry_id}"),
-                expected_exists=entry.data.get("journal_initialized", False),
+                Store(self.hass, STORE_VERSION, f"{DOMAIN}.{entry.entry_id}")
             )
             await journal.async_load()
         if journal.blocked or journal.record:
@@ -266,7 +265,6 @@ class EcoFlowSmartChargeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ):
                     return self.async_abort(reason="already_configured")
                 # Replace, not merge: an emptied PV field switches to the own PV sensor.
-                data["journal_initialized"] = entry.data.get("journal_initialized", False)
                 return self.async_update_reload_and_abort(entry, data=data)
         homes, _ = await suggestions(self.hass)
         return self.async_show_form(
