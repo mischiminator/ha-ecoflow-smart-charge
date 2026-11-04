@@ -253,7 +253,7 @@ class Runtime:
             if self.mode == "active":
                 record = self.journal.record
                 if record and (
-                    record.phase in ("restore_pending", "recovery_pending")
+                    record.phase == "restore_pending"
                     or gate.get("full")
                     or not all(gate.get(k) for k in ("valid", "allowed", "master"))
                 ):

@@ -83,7 +83,7 @@ def join_statistics(raw, keys, zone):
                 start = start.astimezone(UTC)
                 if start in series:
                     duplicates.add(start)
-                    raise ValueError("duplicate_statistic")
+                    continue
                 series[start] = finite(row["change"], -10 if key == keys[0] else 0, 10)
             except KeyError, TypeError, ValueError, AttributeError, OverflowError:
                 continue
