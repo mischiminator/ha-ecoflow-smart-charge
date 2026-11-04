@@ -15,7 +15,7 @@
           "tariff_key": "Tibber-Haushalt"
         },
         "data_description": {
-          "pv_entity": "Übernimmt den Verlauf eines vorhandenen Riemann-PV-Sensors. Leer lassen, dann integriert die Integration die PV-Leistung der Batterien selbst (das Lastprofil braucht dann erst einige Tage Verlauf)."
+          "pv_entity": "Übernimmt den Verlauf eines vorhandenen Riemann-PV-Sensors. Leer lassen, dann berechnet die Integration die PV-Energie selbst aus der PV-Leistung der Akkus (das Lastprofil braucht dann erst einige Tage Verlauf)."
         }
       },
       "reconfigure": {
@@ -31,7 +31,7 @@
           "tariff_key": "Tibber-Haushalt"
         },
         "data_description": {
-          "pv_entity": "Übernimmt den Verlauf eines vorhandenen Riemann-PV-Sensors. Leer lassen, dann integriert die Integration die PV-Leistung der Batterien selbst (das Lastprofil braucht dann erst einige Tage Verlauf)."
+          "pv_entity": "Übernimmt den Verlauf eines vorhandenen Riemann-PV-Sensors. Leer lassen, dann berechnet die Integration die PV-Energie selbst aus der PV-Leistung der Akkus (das Lastprofil braucht dann erst einige Tage Verlauf)."
         }
       }
     },
