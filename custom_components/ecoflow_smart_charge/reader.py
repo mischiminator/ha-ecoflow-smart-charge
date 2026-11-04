@@ -8,6 +8,7 @@ from datetime import UTC, datetime, timedelta
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util import dt as dt_util
 
+from .config_flow import SETTINGS
 from .planner.core import (
     MAX_BATTERIES,
     PRICE_MAX_AGE,
@@ -216,7 +217,8 @@ class SourceReader:
     async def refresh(self):
         now = dt_util.now()
         data = self.data
-        settings = {**self.entry.options, **self.settings}
+        defaults = {key: spec[0] for key, spec in SETTINGS.items()}
+        settings = {**defaults, **self.entry.options, **self.settings}
         gate = {
             "master": settings.get("master", False),
             "allowed": False,
@@ -328,14 +330,12 @@ class SourceReader:
                         strict=True,
                     )
                 ),
-                capacity_kwh=settings.get("capacity_kwh", 1.92),
-                efficiency=settings.get("efficiency", 0.85),
-                wear_cost_ct=settings.get("wear_cost_ct", 2.0),
-                charge_ceiling_ct=settings.get("charge_ceiling_ct", 32.0),
-                minimum_net_saving_ct=settings.get("minimum_net_saving_ct", 3.0),
-                minimum_price_advantage_percent=settings.get(
-                    "minimum_price_advantage_percent", 20.0
-                ),
+                capacity_kwh=settings["capacity_kwh"],
+                efficiency=settings["efficiency"],
+                wear_cost_ct=settings["wear_cost_ct"],
+                charge_ceiling_ct=settings["charge_ceiling_ct"],
+                minimum_net_saving_ct=settings["minimum_net_saving_ct"],
+                minimum_price_advantage_percent=settings["minimum_price_advantage_percent"],
                 active_session=self.journal.record is not None,
                 full_marker_for_solar_day=self.journal.full_marker_day == solar_day,
                 sources_fresh=True,
