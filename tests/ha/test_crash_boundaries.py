@@ -37,14 +37,17 @@ async def setup():
         "allowed": True,
         "solar_day": "2026-01-04",
     }
-    runtime = Runtime(
-        "active",
-        journal,
-        lambda e: (values[e], stamps[e]),
-        lambda e, v: calls.append((e, v)),
-        writers=tuple(values),
-        evaluate=lambda: gate.copy(),
-    )
+
+    async def read(e):
+        return values[e], stamps[e]
+
+    async def write(e, v):
+        calls.append((e, v))
+
+    async def evaluate():
+        return gate.copy()
+
+    runtime = Runtime("active", journal, read, write, writers=tuple(values), evaluate=evaluate)
     return runtime, disk, values, stamps, calls, gate
 
 

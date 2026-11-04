@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -65,7 +64,7 @@ class Runtime:
     async def _gate(self):
         if self.closed or self.journal.blocked or self._evaluate is None:
             return {"valid": False, "allowed": False, "master": False}
-        gate = await self._maybe_await(self._evaluate())
+        gate = await self._evaluate()
         self.last_snapshot = gate
         return gate
 
@@ -81,7 +80,7 @@ class Runtime:
 
     async def _reported(self, entity, desired, *, unchanged_ok=False):
         try:
-            value, stamp = await self._maybe_await(self._read(entity))
+            value, stamp = await self._read(entity)
             value = finite(float(value), 3)
             now = datetime.now(UTC)
             record = self.journal.record
@@ -152,7 +151,7 @@ class Runtime:
                 break
             try:
                 async with asyncio.timeout(10):
-                    await self._maybe_await(self._write(entity, target))
+                    await self._write(entity, target)
             except HomeAssistantError, ValueError, TypeError, TimeoutError, OSError:
                 self.last_error = "device_command_failed"
         # Even an ACK with synchronous state update is only confirmed on next observation.
@@ -196,10 +195,7 @@ class Runtime:
         if not all(gate.get(k) for k in ("valid", "allowed", "master")):
             return False
         if reserves_before is None:
-            reserves_before = {
-                e: finite(float((await self._maybe_await(self._read(e)))[0]), 3)
-                for e in self.writers
-            }
+            reserves_before = {e: finite(float((await self._read(e))[0]), 3) for e in self.writers}
         if set(reserves_before) != set(self.writers):
             return False
         try:
@@ -306,7 +302,3 @@ class Runtime:
                     self.status = "recovery_blocked" if self.journal.blocked else "recovery_pending"
                 self.notify()
             return safe
-
-    @staticmethod
-    async def _maybe_await(value):
-        return await value if inspect.isawaitable(value) else value

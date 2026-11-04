@@ -34,15 +34,17 @@ async def test_restart_after_each_durable_charge_boundary(save_number, prior_wri
     await journal.async_load()
     gate["allowed"] = False
 
+    async def read(e):
+        return values[e], stamps[e]
+
+    async def write(e, v):
+        calls.append((e, v))
+
+    async def evaluate():
+        return gate.copy()
+
     def restart(mode):
-        return Runtime(
-            mode,
-            journal,
-            lambda e: (values[e], stamps[e]),
-            lambda e, v: calls.append((e, v)),
-            writers=tuple(values),
-            evaluate=lambda: gate.copy(),
-        )
+        return Runtime(mode, journal, read, write, writers=tuple(values), evaluate=evaluate)
 
     # A shadow restart keeps the session pending and sends nothing.
     shadow = restart("shadow")

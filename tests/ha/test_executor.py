@@ -37,8 +37,11 @@ async def rig():
         "solar_day": "2026-01-04",
     }
 
-    def read(e):
-        return (values[e], stamps[e])
+    async def read(e):
+        return values[e], stamps[e]
+
+    async def evaluate():
+        return dict(gate)
 
     async def write(e, v):
         calls.append((e, v))
@@ -48,7 +51,7 @@ async def rig():
         journal,
         read,
         write,
-        evaluate=lambda: dict(gate),
+        evaluate=evaluate,
         writers=tuple(values),
     )
     return runtime, disk, values, stamps, calls, gate
@@ -262,16 +265,22 @@ async def test_single_battery_master_confirms_itself():
     disk = Disk()
     values, stamps, calls = {"number.solo": 10}, {"number.solo": datetime.now(UTC)}, []
 
+    async def read(e):
+        return values[e], stamps[e]
+
     async def write(e, v):
         calls.append((e, v))
+
+    async def evaluate():
+        return dict(gate)
 
     gate = {"allowed": True, "valid": True, "master": True, "targets": {"number.solo": 50.0}}
     runtime = Runtime(
         "active",
         PersistentSessionStore(disk),
-        lambda e: (values[e], stamps[e]),
+        read,
         write,
-        evaluate=lambda: dict(gate),
+        evaluate=evaluate,
         writers=("number.solo",),
         leader=lambda: "number.solo",
     )

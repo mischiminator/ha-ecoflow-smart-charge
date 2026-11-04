@@ -82,9 +82,11 @@ def test_planner_accepts_current_published_interval_when_now_is_not_on_boundary(
 async def test_second_start_does_not_overwrite_persisted_individual_reserves() -> None:
     store = PersistentSessionStore(MemoryStore())
     calls: list[tuple[str, float]] = []
-    runtime = Runtime(
-        "active", store, lambda _entity: 3.0, lambda entity, value: calls.append((entity, value))
-    )
+
+    async def write(entity, value):
+        calls.append((entity, value))
+
+    runtime = Runtime("active", store, lambda _entity: 3.0, write)
     await store.async_capture_before_command(
         "persisted",
         {"number.one": 3.0, "number.two": 4.0},
@@ -104,13 +106,23 @@ async def test_restore_marks_readback_pending_until_a_second_confirmed_read() ->
     values = {e: 100.0 for e in originals}
     stamps = {e: datetime.now(UTC) for e in originals}
     calls = []
+
+    async def read(e):
+        return values[e], stamps[e]
+
+    async def write(e, v):
+        calls.append((e, v))
+
+    async def evaluate():
+        return {}
+
     runtime = Runtime(
         "active",
         store,
-        lambda e: (values[e], stamps[e]),
-        lambda e, v: calls.append((e, v)),
+        read,
+        write,
         writers=tuple(originals),
-        evaluate=dict,
+        evaluate=evaluate,
     )
     assert not await runtime.async_restore()
     assert store.record is not None
