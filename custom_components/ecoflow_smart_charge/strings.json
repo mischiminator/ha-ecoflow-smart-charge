@@ -56,7 +56,7 @@
           "mode": "Controller mode",
           "minimum_price_advantage_percent": "Minimum price advantage (%)",
           "charge_ceiling_ct": "Charge price ceiling (ct/kWh)",
-          "master": "Allow price charging",
+          "master": "Price charging enabled",
           "efficiency": "Total efficiency (fraction 0..1)",
           "wear_cost_ct": "Wear (ct/kWh delivered)",
           "minimum_net_saving_ct": "Minimum net saving (ct/kWh delivered)",

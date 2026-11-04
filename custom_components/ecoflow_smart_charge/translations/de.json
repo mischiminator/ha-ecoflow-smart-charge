@@ -56,7 +56,7 @@
           "mode": "Steuerungsmodus",
           "minimum_price_advantage_percent": "Mindestpreisvorteil (%)",
           "charge_ceiling_ct": "Maximaler Ladepreis (ct/kWh)",
-          "master": "Preisladung erlauben",
+          "master": "Preisladung erlaubt",
           "efficiency": "Gesamtwirkungsgrad (Anteil 0..1)",
           "wear_cost_ct": "Verschleiß (ct/kWh geliefert)",
           "minimum_net_saving_ct": "Mindestnettoersparnis (ct/kWh geliefert)",
