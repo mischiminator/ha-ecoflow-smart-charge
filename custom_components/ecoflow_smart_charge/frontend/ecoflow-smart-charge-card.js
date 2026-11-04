@@ -238,6 +238,7 @@ class EcoFlowSmartChargeCard extends HTMLElement {
   setConfig(config) {
     if (config.device_id !== undefined && typeof config.device_id !== 'string') throw new Error('device_id must be a device ID.');
     this._config = { ...config };
+    this._resolvedFrom = null;
     this._render();
     this._update();
   }
@@ -377,7 +378,12 @@ class EcoFlowSmartChargeCard extends HTMLElement {
   _update() {
     if (!this._hass || !this._config || !this._refs) return;
     const t = this._t;
-    const resolved = this._resolve();
+    // hass is replaced on every state change in the house; the registry only on its own changes.
+    if (this._hass.entities !== this._resolvedFrom) {
+      this._resolvedFrom = this._hass.entities;
+      this._resolved = this._resolve();
+    }
+    const resolved = this._resolved;
     this._refs.empty.hidden = !resolved.error;
     this._refs.content.hidden = Boolean(resolved.error);
     if (resolved.error) { this._refs.empty.textContent = t[resolved.error]; return; }
