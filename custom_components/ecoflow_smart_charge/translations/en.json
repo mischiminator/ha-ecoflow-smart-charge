@@ -58,7 +58,7 @@
           "charge_ceiling_ct": "Charge price ceiling (ct/kWh)",
           "master": "Price charging enabled",
           "efficiency": "Total efficiency (fraction 0..1)",
-          "wear_cost_ct": "Wear (ct/kWh delivered)",
+          "wear_cost_ct": "Wear cost (ct/kWh delivered)",
           "minimum_net_saving_ct": "Minimum net saving (ct/kWh delivered)",
           "capacity_kwh": "Fallback capacity per battery (unknown models, kWh)"
         }
