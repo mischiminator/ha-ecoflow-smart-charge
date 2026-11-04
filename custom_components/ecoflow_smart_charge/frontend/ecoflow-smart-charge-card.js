@@ -85,11 +85,10 @@ const EFS_TEXT = {
     cancel: 'Abbrechen',
     save: 'Speichern',
     savingProgress: 'Speichert …',
-    saved: 'Gespeichert und von Home Assistant bestätigt.',
+    saved: 'Gespeichert.',
     noChanges: 'Keine Änderungen – die aktuellen Einstellungen bleiben erhalten.',
     invalidNumbers: 'Bitte gültige Zahlen eingeben.',
     partlyApplied: n => `${n} Änderung(en) wurden bereits übernommen. `,
-    notConfirmed: e => `Home Assistant hat den neuen Wert nicht bestätigt: ${e}`,
     settingsUnavailable: e => `Konfiguration nicht verfügbar: ${e}`,
     editorTitle: 'Titel',
     editorDevice: 'EcoFlow-Smart-Charge-Instanz',
@@ -174,11 +173,10 @@ const EFS_TEXT = {
     cancel: 'Cancel',
     save: 'Save',
     savingProgress: 'Saving …',
-    saved: 'Saved and confirmed by Home Assistant.',
+    saved: 'Saved.',
     noChanges: 'No changes – the current settings stay as they are.',
     invalidNumbers: 'Please enter valid numbers.',
     partlyApplied: n => `${n} change(s) were already applied. `,
-    notConfirmed: e => `Home Assistant did not confirm the new value: ${e}`,
     settingsUnavailable: e => `Settings unavailable: ${e}`,
     editorTitle: 'Title',
     editorDevice: 'EcoFlow Smart Charge instance',
@@ -525,14 +523,9 @@ class EcoFlowSmartChargeCard extends HTMLElement {
 
   _close() { if (!this._saving) this._refs.dialog.close(); }
 
-  // A service acknowledgement is not enough: read the state back from Home Assistant.
-  async _confirmed(domain, service, entity, data, expected) {
-    await this._hass.callService(domain, service, { entity_id: entity, ...data });
-    const readback = await this._hass.callApi('GET', 'states/' + entity);
-    const ok = typeof expected === 'number'
-      ? Number.isFinite(Number(readback.state)) && Math.abs(Number(readback.state) - expected) <= 1e-7
-      : readback.state === expected;
-    if (!ok) throw new Error(this._t.notConfirmed(entity));
+  // callService rejects when Home Assistant refuses the value.
+  _call(domain, service, entity, data = {}) {
+    return this._hass.callService(domain, service, { entity_id: entity, ...data });
   }
 
   async _toggle() {
@@ -542,7 +535,7 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     this._refs['card-error'].textContent = '';
     this._update();
     try {
-      await this._confirmed('switch', current === 'on' ? 'turn_off' : 'turn_on', id, {}, current === 'on' ? 'off' : 'on');
+      await this._call('switch', current === 'on' ? 'turn_off' : 'turn_on', id);
     } catch (e) {
       this._refs['card-error'].textContent = e.message || String(e);
     } finally {
@@ -568,11 +561,11 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     this.shadowRoot.querySelectorAll('dialog button,dialog input,dialog select').forEach(e => { e.disabled = true; });
     try {
       // Stopping comes first and starting last, so no intermediate state widens permission.
-      if (enabled !== this._snapshot.enabled && !enabled) { await this._confirmed('switch', 'turn_off', this._id('switch.master'), {}, 'off'); this._snapshot.enabled = false; applied++; }
-      if (mode !== this._snapshot.mode && mode === 'shadow') { await this._confirmed('select', 'select_option', this._id('select.mode'), { option: mode }, mode); this._snapshot.mode = mode; applied++; }
-      for (const [key, value] of edits) { await this._confirmed('number', 'set_value', this._id('number.' + key), { value }, value); this._snapshot[key] = value; applied++; }
-      if (mode !== this._snapshot.mode) { await this._confirmed('select', 'select_option', this._id('select.mode'), { option: mode }, mode); this._snapshot.mode = mode; applied++; }
-      if (enabled !== this._snapshot.enabled) { await this._confirmed('switch', 'turn_on', this._id('switch.master'), {}, 'on'); this._snapshot.enabled = true; applied++; }
+      if (enabled !== this._snapshot.enabled && !enabled) { await this._call('switch', 'turn_off', this._id('switch.master')); this._snapshot.enabled = false; applied++; }
+      if (mode !== this._snapshot.mode && mode === 'shadow') { await this._call('select', 'select_option', this._id('select.mode'), { option: mode }); this._snapshot.mode = mode; applied++; }
+      for (const [key, value] of edits) { await this._call('number', 'set_value', this._id('number.' + key), { value }); this._snapshot[key] = value; applied++; }
+      if (mode !== this._snapshot.mode) { await this._call('select', 'select_option', this._id('select.mode'), { option: mode }); this._snapshot.mode = mode; applied++; }
+      if (enabled !== this._snapshot.enabled) { await this._call('switch', 'turn_on', this._id('switch.master')); this._snapshot.enabled = true; applied++; }
       this._feedback(applied ? t.saved : t.noChanges);
       this._refs.cancel.textContent = t.close;
     } catch (e) {

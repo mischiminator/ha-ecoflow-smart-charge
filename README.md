@@ -56,7 +56,7 @@ type: custom:ecoflow-smart-charge-card
 # device_id: only needed with more than one EcoFlow Smart Charge entry
 ```
 
-It shows status and reason, the charge target, price, solar surplus, net saving, the planned grid charge, the current or next best-price window, the total and per-battery level (tap for history). The gear opens the settings; every change is read back from Home Assistant before it counts as saved. German and English.
+It shows status and reason, the charge target, price, solar surplus, net saving, the planned grid charge, the current or next best-price window, the total and per-battery level (tap for history). The gear opens the settings. German and English.
 
 ## Controls
 
