@@ -37,7 +37,6 @@
     },
     "error": {
       "battery_count_invalid": "Select at least one EcoFlow battery (at most 10), each only once.",
-      "duplicate_reserves": "Each battery entity must be distinct.",
       "source_invalid": "Missing, unavailable, wrong or duplicate source, or empty tariff key.",
       "unit_invalid": "Source unit or value is invalid.",
       "device_entities_missing": "A selected device or entry lacks a required entity (SOC, reserve, Self-powered, charge/discharge energy, PV power, grid energy, forecast, price or best-price window), or it is disabled."

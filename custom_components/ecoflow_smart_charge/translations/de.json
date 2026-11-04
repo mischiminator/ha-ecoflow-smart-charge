@@ -37,7 +37,6 @@
     },
     "error": {
       "battery_count_invalid": "Mindestens eine EcoFlow-Batterie auswählen (höchstens 10), jede nur einmal.",
-      "duplicate_reserves": "Jede Batterie-Entität muss eindeutig sein.",
       "source_invalid": "Fehlende, nicht verfügbare, falsche oder doppelte Quelle bzw. leerer Tarifschlüssel.",
       "unit_invalid": "Einheit oder Wert der Quelle ist ungültig.",
       "device_entities_missing": "Einem ausgewählten Gerät oder Eintrag fehlt eine benötigte Entität (SOC, Reserve, Self-powered, Lade-/Entladeenergie, PV-Leistung, Netzenergie, Prognose, Preis oder Bestpreis-Zeitraum), oder sie ist deaktiviert."

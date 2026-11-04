@@ -12,22 +12,23 @@ from homeassistant.helpers import selector
 from .const import DOMAIN
 from .planner.core import MAX_BATTERIES
 
-SINGLES = {
-    "grid_energy_entity": "sensor",
-    "price_entity": "sensor",
-    "price_window_entity": "binary_sensor",
-    "forecast_today_entity": "sensor",
-    "forecast_remaining_entity": "sensor",
-    "forecast_tomorrow_entity": "sensor",
-    "sun_entity": "sun",
-}
-TRIPLES = {
-    "soc_entities": "sensor",
-    "reserve_entities": "number",
-    "self_powered_entities": "switch",
-    "charge_energy_entities": "sensor",
-    "discharge_energy_entities": "sensor",
-}
+SINGLES = (
+    "grid_energy_entity",
+    "price_entity",
+    "price_window_entity",
+    "forecast_today_entity",
+    "forecast_remaining_entity",
+    "forecast_tomorrow_entity",
+    "sun_entity",
+)
+# One entity per battery each.
+TRIPLES = (
+    "soc_entities",
+    "reserve_entities",
+    "self_powered_entities",
+    "charge_energy_entities",
+    "discharge_energy_entities",
+)
 # What the user picks; everything in SINGLES/TRIPLES is resolved from it.
 FIELDS = (
     "name",
@@ -70,19 +71,13 @@ def validate_settings(values):
 
 
 def validate_mapping(hass, data):
-    count = len(data.get("soc_entities", []))
-    if not 1 <= count <= MAX_BATTERIES or any(len(data.get(k, [])) != count for k in TRIPLES):
-        return "battery_count_invalid"
-    if any(len(set(data[key])) != count for key in TRIPLES):
-        return "duplicate_reserves"
+    """States and units of a mapping resolve() built; counts and domains are already right."""
     try:
-        selected = [(data[k], domain) for k, domain in SINGLES.items()]
-        selected += [(e, domain) for k, domain in TRIPLES.items() for e in data[k]]
         if not data["tariff_key"].strip():
             return "source_invalid"
         # Without a selected PV meter the integration integrates PV power itself.
         pv = [data["pv_entity"]] if data.get("pv_entity") else []
-        selected += [(e, "sensor") for e in pv]
+        selected = [data[k] for k in SINGLES] + [e for k in TRIPLES for e in data[k]] + pv
         energy = [
             data["grid_energy_entity"],
             *pv,
@@ -91,13 +86,9 @@ def validate_mapping(hass, data):
         ]
         if len(set(energy)) != len(energy):
             return "source_invalid"
-        for entity, domain in selected:
+        for entity in selected:
             state = hass.states.get(entity)
-            if (
-                entity.split(".")[0] != domain
-                or state is None
-                or state.state in ("unknown", "unavailable")
-            ):
+            if state is None or state.state in ("unknown", "unavailable"):
                 return "source_invalid"
         for entity in energy + [
             data[k]

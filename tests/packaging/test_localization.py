@@ -51,7 +51,6 @@ def test_complete_matching_locales_and_service_fields():
     assert strings == en
     assert leaf_keys(en) == leaf_keys(de)
     assert "config.error.battery_count_invalid" in leaf_keys(en)
-    assert "config.error.duplicate_reserves" in leaf_keys(en)
     assert "config.abort.already_configured" in leaf_keys(en)
     services = yaml.safe_load((COMPONENT / "services.yaml").read_text())
     assert set(services) == set(en["services"])
