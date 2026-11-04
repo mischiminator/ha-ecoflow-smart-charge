@@ -99,6 +99,18 @@ async def test_source_to_plan_selects_tariff_and_fails_closed_on_wrong_home(hass
         with patch("custom_components.ecoflow_smart_charge.reader.dt_util.now", return_value=later):
             result = await reader.refresh()
         assert "detail" not in result and result["reason"] != "source_missing"
+        # Prices are published once a day: fetched again only in the next hour.
+        reader.prices_fetched = later.replace(minute=0, second=0, microsecond=0)
+        kept = reader.prices
+        with patch("custom_components.ecoflow_smart_charge.reader.dt_util.now", return_value=later):
+            await reader.refresh()
+        assert reader.prices is kept
+        next_hour = later + timedelta(hours=1)
+        with patch(
+            "custom_components.ecoflow_smart_charge.reader.dt_util.now", return_value=next_hour
+        ):
+            await reader.refresh()
+        assert reader.prices is not kept
         # The reserve is reported only when it changes: an hours-old value still plans.
         assert reader.numeric(data["reserve_entities"][0], now + timedelta(hours=5), None) == 13
         hass.states.async_set(data["reserve_entities"][0], "unavailable")
@@ -121,7 +133,9 @@ async def test_source_to_plan_selects_tariff_and_fails_closed_on_wrong_home(hass
         assert not (await reader.refresh())["valid"]
 
 
-async def test_learning_persists_probe_then_learns_yesterday_before_new_probe(hass):
+async def test_learning_persists_probe_then_learns_yesterday_before_new_probe(hass, freezer):
+    # Probes start at 05:00; a fixed noon keeps the test independent of the wall clock.
+    freezer.move_to("2026-06-02T12:00:00+00:00")
     from custom_components.ecoflow_smart_charge.reader import SourceReader
     from custom_components.ecoflow_smart_charge.storage import PersistentSessionStore
 

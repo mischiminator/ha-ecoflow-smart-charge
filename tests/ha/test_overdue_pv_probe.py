@@ -89,3 +89,35 @@ async def test_overdue_probe_recovers_correct_local_day_after_restart(
         await SourceReader(hass, entry, restarted).learn()
     daily.assert_not_awaited()
     assert restarted.learning == saved
+
+
+async def test_probe_day_that_never_completes_is_closed_after_a_week(hass, freezer):
+    freezer.move_to("2026-01-12T14:00:00+00:00")
+    now = datetime.fromisoformat("2026-01-12T14:00:00+00:00")
+    journal = PersistentSessionStore(Disk())
+    # E.g. installed in the afternoon: the own PV sensor has only part of the first day.
+    await journal.async_set_learning(
+        {
+            "probe_day": "2026-01-03",
+            "probe_kwh": 5.0,
+            "ratios": [1, 1, 1],
+            "correction": 1.0,
+            "learned_day": None,
+        }
+    )
+    entry = MockConfigEntry(
+        domain="ecoflow_smart_charge",
+        data={"pv_entity": "sensor.pv", "forecast_today_entity": "sensor.forecast"},
+    )
+    hass.states.async_set("sensor.forecast", "8", {"unit_of_measurement": "kWh"})
+    with (
+        patch("custom_components.ecoflow_smart_charge.reader.dt_util.now", return_value=now),
+        patch(
+            "custom_components.ecoflow_smart_charge.reader.read_daily_pv",
+            return_value=(2.0, 10),
+        ),
+    ):
+        await SourceReader(hass, entry, journal).learn()
+    assert journal.learning["learned_day"] == "2026-01-03"
+    assert journal.learning["ratios"] == [1, 1, 1]
+    assert journal.learning["probe_day"] == "2026-01-12"

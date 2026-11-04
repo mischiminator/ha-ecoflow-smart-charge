@@ -215,6 +215,30 @@ async def test_only_the_master_is_commanded_and_slaves_confirm():
 
 
 @pytest.mark.asyncio
+async def test_confirmed_charge_holds_without_repeated_reports():
+    from dataclasses import replace
+
+    runtime, disk, values, stamps, calls, gate = await rig()
+    runtime._leader = lambda: "number.slot_0"
+    gate["targets"] = dict.fromkeys(values, 60.0)
+    assert not await runtime.async_start(dict(values))
+    record = runtime.journal.record
+    past = (datetime.now(UTC) - timedelta(minutes=10)).isoformat()
+    runtime.journal.record = replace(
+        record, created_at=past, intent_at=dict.fromkeys(record.intent_at, past)
+    )
+    # The slaves reported the synced value once, five minutes ago, and never again.
+    for e in ("number.slot_1", "number.slot_2"):
+        values[e], stamps[e] = 60.0, datetime.now(UTC) - timedelta(minutes=5)
+    await runtime.async_recalculate()
+    assert runtime.status == "charging"
+    saved = deepcopy(disk.data)
+    await runtime.async_recalculate()
+    assert runtime.status == "charging" and len(calls) == 1
+    assert disk.data == saved
+
+
+@pytest.mark.asyncio
 async def test_single_battery_master_confirms_itself():
     from custom_components.ecoflow_smart_charge.runtime import Runtime
 
