@@ -179,12 +179,6 @@ class Runtime:
         gate = await self._gate()
         return all(gate.get(k) for k in ("valid", "allowed", "master"))
 
-    async def async_start(self, reserves_before=None):
-        async with self._lock:
-            result = await self._start(reserves_before)
-            self.notify()
-            return result
-
     async def _start(self, reserves_before):
         gate = await self._gate()
         if self.draining or self.mode != "active" or not self._mapping_valid():
@@ -212,19 +206,6 @@ class Runtime:
         )
         return await self._execute(targets, restore=False)
 
-    async def async_retry_charge(self):
-        async with self._lock:
-            record = self.journal.record
-            if record is None or record.phase not in (
-                "intent_persisted",
-                "charge_pending",
-                "charging",
-            ):
-                return False
-            result = await self._execute(self._charge_targets(), restore=False)
-            self.notify()
-            return result
-
     async def _restore(self):
         record = self.journal.record
         if self.journal.blocked:
@@ -239,12 +220,6 @@ class Runtime:
         if gate.get("full") and record.solar_day:
             await self.journal.async_set_marker(record.solar_day)
         return await self._execute(dict(record.reserves_before), restore=True)
-
-    async def async_restore(self):
-        async with self._lock:
-            result = await self._restore()
-            self.notify()
-            return result
 
     async def async_recalculate(self):
         async with self._lock:

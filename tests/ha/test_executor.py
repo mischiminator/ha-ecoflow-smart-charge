@@ -61,7 +61,7 @@ async def rig():
 async def test_shadow_mode_sends_no_commands():
     runtime, _, values, _, calls, _ = await rig()
     runtime.mode = "shadow"
-    assert not await runtime.async_start(values)
+    assert not await runtime._start(values)
     await runtime.async_recalculate()
     assert calls == [] and runtime.journal.record is None
     assert runtime.status == "shadow"
@@ -71,21 +71,21 @@ async def test_shadow_mode_sends_no_commands():
 async def test_ack_is_not_readback_and_retry_keeps_originals():
     runtime, _disk, values, stamps, calls, gate = await rig()
     originals = dict(values)
-    assert not await runtime.async_start(originals)
+    assert not await runtime._start(originals)
     assert len(calls) == 3
     assert runtime.journal.record.reserves_before == originals
     for e in values:
         values[e] = 100
         stamps[e] = datetime.now(UTC)
-    assert await runtime.async_retry_charge()
+    assert await runtime._execute(runtime._charge_targets(), restore=False)
     assert len(calls) == 3
     gate["allowed"] = False
-    assert not await runtime.async_restore()
+    assert not await runtime._restore()
     assert len(calls) == 6
     for e in values:
         values[e] = originals[e]
         stamps[e] = datetime.now(UTC)
-    assert await runtime.async_restore()
+    assert await runtime._restore()
     assert runtime.journal.record is None
 
 
@@ -94,11 +94,11 @@ async def test_save_failure_and_closed_gate_send_no_commands():
     runtime, disk, values, _, calls, gate = await rig()
     disk.fail = True
     with pytest.raises(OSError):
-        await runtime.async_start(values)
+        await runtime._start(values)
     assert calls == [] and runtime.journal.record is None
     disk.fail = False
     gate["master"] = False
-    assert not await runtime.async_start(values)
+    assert not await runtime._start(values)
     assert calls == []
 
 
@@ -106,10 +106,10 @@ async def test_save_failure_and_closed_gate_send_no_commands():
 async def test_stale_matching_readback_does_not_clear_restore():
     runtime, _, values, stamps, _calls, _ = await rig()
     originals = dict(values)
-    await runtime.async_start(originals)
+    await runtime._start(originals)
     for e in values:
         stamps[e] = datetime.now(UTC) - timedelta(hours=1)
-    assert not await runtime.async_restore()
+    assert not await runtime._restore()
     assert runtime.journal.record is not None
 
 
@@ -122,7 +122,7 @@ async def test_charge_gate_is_rechecked_between_each_device_write():
         gate["allowed"] = False
 
     runtime._write = write
-    assert not await runtime.async_start(values)
+    assert not await runtime._start(values)
     assert len(calls) == 1
     assert runtime.journal.record is not None
 
@@ -137,15 +137,15 @@ async def test_partial_service_failure_does_not_discard_intent():
             raise TimeoutError()
 
     runtime._write = write
-    assert not await runtime.async_start(values)
+    assert not await runtime._start(values)
     assert len(calls) == 3
 
 
 async def test_unconfirmed_command_retries_are_rate_limited():
     runtime, _, values, _, calls, _ = await rig()
-    await runtime.async_start(values)
+    await runtime._start(values)
     assert len(calls) == 3
-    await runtime.async_retry_charge()
+    await runtime._execute(runtime._charge_targets(), restore=False)
     assert len(calls) == 3
     assert runtime.journal.record.phase == "charge_pending"
 
@@ -155,14 +155,14 @@ async def test_shared_target_is_persisted_and_never_lowers_a_reserve():
     runtime, disk, values, stamps, _calls, gate = await rig()
     gate["targets"] = dict.fromkeys(values, 11.0)
     originals = dict(values)
-    assert not await runtime.async_start(originals)
+    assert not await runtime._start(originals)
     # slot_2 keeps its higher original reserve instead of the lower shared target.
     expected = {"number.slot_0": 11.0, "number.slot_1": 11.0, "number.slot_2": 12}
     assert runtime.journal.record.charge_targets == expected
     assert disk.data["session"]["charge_targets"] == expected
     for e, target in expected.items():
         values[e], stamps[e] = target, datetime.now(UTC)
-    assert await runtime.async_retry_charge()
+    assert await runtime._execute(runtime._charge_targets(), restore=False)
     assert runtime.status == "charging"
     # The window ends before the batteries are full: restore, but no solar-day marker,
     # so a later cheap window (e.g. at noon) may still top up.
@@ -176,7 +176,7 @@ async def test_shared_target_is_persisted_and_never_lowers_a_reserve():
 async def test_running_session_follows_forecast_with_hysteresis():
     runtime, disk, values, _stamps, calls, gate = await rig()
     gate["targets"] = dict.fromkeys(values, 60.0)
-    assert not await runtime.async_start(dict(values))
+    assert not await runtime._start(dict(values))
     calls.clear()
     # A one-point forecast wobble is not worth a device command.
     gate["targets"] = dict.fromkeys(values, 61.0)
@@ -198,7 +198,7 @@ async def test_running_session_follows_forecast_with_hysteresis():
 async def test_no_session_when_targets_do_not_exceed_original_reserves():
     runtime, _, values, _, calls, gate = await rig()
     gate["targets"] = dict.fromkeys(values, 5.0)
-    assert not await runtime.async_start(dict(values))
+    assert not await runtime._start(dict(values))
     assert calls == [] and runtime.journal.record is None
 
 
@@ -207,13 +207,13 @@ async def test_only_the_master_is_commanded_and_slaves_confirm():
     runtime, _, values, stamps, calls, gate = await rig()
     runtime._leader = lambda: "number.slot_0"
     gate["targets"] = dict.fromkeys(values, 60.0)
-    assert not await runtime.async_start(dict(values))
+    assert not await runtime._start(dict(values))
     assert calls == [("number.slot_0", 60.0)]
     assert {"number.slot_1", "number.slot_2"} <= set(runtime.journal.record.pending_targets)
     # The slaves pick up the synced reserve and report it; the master's own report is not needed.
     for e in ("number.slot_1", "number.slot_2"):
         values[e], stamps[e] = 60.0, datetime.now(UTC)
-    assert await runtime.async_retry_charge()
+    assert await runtime._execute(runtime._charge_targets(), restore=False)
     assert runtime.status == "charging" and len(calls) == 1
 
 
@@ -224,7 +224,7 @@ async def test_confirmed_charge_holds_without_repeated_reports():
     runtime, disk, values, stamps, calls, gate = await rig()
     runtime._leader = lambda: "number.slot_0"
     gate["targets"] = dict.fromkeys(values, 60.0)
-    assert not await runtime.async_start(dict(values))
+    assert not await runtime._start(dict(values))
     record = runtime.journal.record
     past = (datetime.now(UTC) - timedelta(minutes=10)).isoformat()
     runtime.journal.record = replace(
@@ -245,7 +245,7 @@ async def test_confirmed_charge_holds_without_repeated_reports():
 async def test_failed_close_finishes_restore_but_never_starts_again():
     runtime, _, values, stamps, calls, _gate = await rig()
     originals = dict(values)
-    assert not await runtime.async_start(dict(values))
+    assert not await runtime._start(dict(values))
     # The restore is sent but not yet confirmed, so the unload fails.
     assert not await runtime.async_close()
     assert runtime.draining and len(calls) == 6
@@ -284,9 +284,9 @@ async def test_single_battery_master_confirms_itself():
         writers=("number.solo",),
         leader=lambda: "number.solo",
     )
-    assert not await runtime.async_start(dict(values))
+    assert not await runtime._start(dict(values))
     values["number.solo"], stamps["number.solo"] = 50.0, datetime.now(UTC)
-    assert await runtime.async_retry_charge()
+    assert await runtime._execute(runtime._charge_targets(), restore=False)
     assert calls == [("number.solo", 50.0)]
 
 
@@ -297,7 +297,7 @@ async def test_restore_of_a_never_changed_reserve_confirms_after_grace():
     runtime, _, values, _stamps, calls, gate = await rig()
     runtime._leader = lambda: "number.slot_0"
     gate["targets"] = dict.fromkeys(values, 60.0)
-    assert not await runtime.async_start(dict(values))
+    assert not await runtime._start(dict(values))
     # The charge command never reached the devices: nothing changed, nothing was reported.
     gate["allowed"] = False
     await runtime.async_recalculate()
@@ -305,10 +305,10 @@ async def test_restore_of_a_never_changed_reserve_confirms_after_grace():
     assert record.phase == "restore_pending"
     assert calls[-1] == ("number.slot_0", 10)
     # Within the sync grace the unchanged value is not trusted yet.
-    assert not await runtime.async_restore()
+    assert not await runtime._restore()
     past = (datetime.now(UTC) - timedelta(seconds=180)).isoformat()
     runtime.journal.record = replace(record, restore_started_at=past)
-    assert await runtime.async_restore()
+    assert await runtime._restore()
     assert runtime.journal.record is None and runtime.status == "restored"
 
 
@@ -319,11 +319,11 @@ async def test_unchanged_value_never_confirms_a_charge():
     runtime, _, values, _stamps, _calls, gate = await rig()
     runtime._leader = lambda: "number.slot_0"
     gate["targets"] = dict.fromkeys(values, 60.0)
-    assert not await runtime.async_start(dict(values))
+    assert not await runtime._start(dict(values))
     record = runtime.journal.record
     past = (datetime.now(UTC) - timedelta(seconds=600)).isoformat()
     runtime.journal.record = replace(record, created_at=past)
-    assert not await runtime.async_retry_charge()
+    assert not await runtime._execute(runtime._charge_targets(), restore=False)
     assert runtime.journal.record.phase == "charge_pending"
 
 

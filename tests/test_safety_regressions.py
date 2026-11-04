@@ -92,7 +92,7 @@ async def test_second_start_does_not_overwrite_persisted_individual_reserves() -
         {"number.one": 3.0, "number.two": 4.0},
         {"number.one": 100.0, "number.two": 100.0},
     )
-    assert not await runtime.async_start({"number.one": 88.0, "number.two": 99.0})
+    assert not await runtime._start({"number.one": 88.0, "number.two": 99.0})
     assert store.record is not None
     assert store.record.reserves_before == {"number.one": 3.0, "number.two": 4.0}
     assert calls == []
@@ -124,11 +124,11 @@ async def test_restore_marks_readback_pending_until_a_second_confirmed_read() ->
         writers=tuple(originals),
         evaluate=evaluate,
     )
-    assert not await runtime.async_restore()
+    assert not await runtime._restore()
     assert store.record is not None
     assert store.record.phase == "restore_pending"
     assert len(calls) == 3
     values.update(originals)
     stamps.update({e: datetime.now(UTC) for e in originals})
-    assert await runtime.async_restore()
+    assert await runtime._restore()
     assert store.record is None and runtime.status == "restored"

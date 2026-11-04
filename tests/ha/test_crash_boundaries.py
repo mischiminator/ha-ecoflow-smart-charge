@@ -55,17 +55,17 @@ async def test_cancelled_initial_save_sends_zero_commands():
     r, disk, values, _, calls, _ = await setup()
     disk.cancel = True
     with pytest.raises(asyncio.CancelledError):
-        await r.async_start(values)
+        await r._start(values)
     assert calls == [] and r.journal.record is None
 
 
 async def test_failed_unload_keeps_recovery_usable():
     r, _disk, values, _stamps, calls, _ = await setup()
-    await r.async_start(values)
+    await r._start(values)
     assert not await r.async_close()
     assert not r.closed and r.mode == "active"
     assert r.status == "recovery_pending"
-    assert not await r.async_restore()
+    assert not await r._restore()
     assert len(calls) >= 6
 
 
@@ -78,27 +78,27 @@ async def test_restart_of_missing_existing_journal_is_blocked():
 async def test_readback_from_before_latest_command_does_not_confirm(freezer):
     r, _disk, values, stamps, calls, _ = await setup()
     originals = dict(values)
-    await r.async_start(originals)
+    await r._start(originals)
     freezer.tick(1)
     for e in values:
         values[e] = 100
         stamps[e] = datetime.now(UTC)
-    assert await r.async_retry_charge()
+    assert await r._execute(r._charge_targets(), restore=False)
     for e in values:
         values[e] = originals[e]
     # These apparent values were observed BEFORE restore intent was written.
     freezer.tick(1)
-    assert not await r.async_restore()
+    assert not await r._restore()
     count = len(calls)
     freezer.tick(31)
-    assert not await r.async_restore()
+    assert not await r._restore()
     assert r.journal.record is not None and len(calls) > count
 
 
 async def test_full_marker_is_saved_before_restore_command_and_survives_clear():
     r, disk, values, stamps, calls, gate = await setup()
     originals = dict(values)
-    await r.async_start(originals)
+    await r._start(originals)
     for e in values:
         values[e] = 100
         stamps[e] = datetime.now(UTC)
@@ -109,11 +109,11 @@ async def test_full_marker_is_saved_before_restore_command_and_survives_clear():
         calls.append((e, v))
 
     r._write = write
-    assert not await r.async_restore()
+    assert not await r._restore()
     for e in values:
         values[e] = originals[e]
         stamps[e] = datetime.now(UTC)
-    assert await r.async_restore()
+    assert await r._restore()
     assert disk.data["full_marker_day"] == "2026-01-04"
     assert disk.data["session"] is None
 
@@ -128,7 +128,7 @@ async def test_stop_persistence_failure_still_persists_the_stop(key, value):
     r, disk, values, _stamps, calls, _gate = await setup()
     r.entry = SimpleNamespace(options={"master": True, "mode": "active"})
     r.hass = SimpleNamespace(config_entries=Entries())
-    await r.async_start(values)
+    await r._start(values)
 
     async def failed_save(_data):
         raise OSError("disk unavailable")
@@ -141,5 +141,5 @@ async def test_stop_persistence_failure_still_persists_the_stop(key, value):
     if key == "mode":
         assert r.mode == "shadow"
         before = len(calls)
-        await r.async_retry_charge()
+        await r._execute(r._charge_targets(), restore=False)
         assert len(calls) == before

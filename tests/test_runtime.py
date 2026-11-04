@@ -20,7 +20,7 @@ async def test_unknown_constructor_mode_falls_back_to_shadow(requested_mode):
     calls = []
     runtime = Runtime(requested_mode, journal, lambda _: 3, lambda *args: calls.append(args))
     assert runtime.mode == "shadow"
-    assert not await runtime.async_start({"number.one": 3})
+    assert not await runtime._start({"number.one": 3})
     assert calls == [] and journal.record is None
 
 
