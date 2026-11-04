@@ -2,6 +2,7 @@
   "domain": "ecoflow_smart_charge",
   "name": "EcoFlow Smart Charge",
   "after_dependencies": ["frontend", "http", "recorder"],
+  "categories": ["energy.solar_batteries", "energy.energy_prices"],
   "codeowners": ["@mischiminator"],
   "config_flow": true,
   "documentation": "https://github.com/mischiminator/ha-ecoflow-smart-charge",
