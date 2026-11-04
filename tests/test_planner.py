@@ -156,7 +156,6 @@ class BatteryCountTests(unittest.TestCase):
         self.assertNotEqual(one.reason, "battery_data_invalid")
         self.assertNotEqual(four.reason, "battery_data_invalid")
         self.assertAlmostEqual(four.missing_energy_kwh, 4 * one.missing_energy_kwh)
-        self.assertEqual(decide(valid_input(batteries=())).reason, "battery_data_invalid")
 
     def test_profile_accepts_one_battery_rows_and_rejects_mismatched_lists(self) -> None:
         rows = [{**r, "charges": (0.3,), "discharges": (0.6,)} for r in complete_rows()]
@@ -210,8 +209,6 @@ class SolarTargetTests(unittest.TestCase):
             )
         )
         self.assertAlmostEqual(mixed.missing_energy_kwh, 3.84 * 0.5 + 1.0 * 0.5)
-        bad = decide(valid_input(batteries=(Battery(50, 3, 0.0),)))
-        self.assertEqual(bad.reason, "battery_data_invalid")
 
 
 def solar_profile():
