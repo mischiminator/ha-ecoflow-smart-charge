@@ -43,6 +43,8 @@ class Runtime:
         self.status = "recovery_blocked" if journal.blocked else self._idle_status()
         self.last_snapshot = None
         self.closed = False
+        # Set by a failed unload: the timers may only finish the restore, never start anew.
+        self.draining = False
         self.cancels = []
         self.listeners = set()
         self.last_error = None
@@ -89,7 +91,8 @@ class Runtime:
             created = max(datetime.fromisoformat(t) for t in thresholds)
             if stamp.tzinfo is None or abs(value - desired) > 0.001:
                 return False
-            if not 0 <= (now - stamp).total_seconds() < 120 or stamp <= created:
+            # Any report after the intent proves the value; EcoFlow never repeats unchanged ones.
+            if stamp > now or stamp <= created:
                 # A restore value the device has shown since before the session, without any
                 # report since, was never changed by it (EcoFlow reports only changes).
                 session = datetime.fromisoformat(record.created_at)
@@ -121,7 +124,6 @@ class Runtime:
         for entity in confirm:
             if not await self._reported(entity, targets[entity], unchanged_ok=restore):
                 pending[entity] = targets[entity]
-        await self.journal.async_update_phase(phase, pending)
         if not pending:
             if restore:
                 await self.journal.async_clear_after_readback()
@@ -130,6 +132,7 @@ class Runtime:
                 await self.journal.async_update_phase("charging", {})
                 self.status = "charging"
             return True
+        await self.journal.async_update_phase(phase, pending)
         self.status = phase
         commands = {leader: targets[leader]} if leader else pending
         for entity, target in commands.items():
@@ -186,7 +189,7 @@ class Runtime:
 
     async def _start(self, reserves_before):
         gate = await self._gate()
-        if self.mode != "active" or not self._mapping_valid():
+        if self.draining or self.mode != "active" or not self._mapping_valid():
             return False
         if self.journal.record is not None:
             self.status = "recovery_pending"
@@ -285,10 +288,7 @@ class Runtime:
                 self.hass.config_entries.async_update_entry(self.entry, options=options)
                 self.notify()
 
-    async def async_close(self):
-        for cancel in self.cancels:
-            cancel()
-        self.cancels.clear()
+    async def async_close(self, *, final=False):
         async with self._lock:
             try:
                 if self.mode == "active" and self.journal.record:
@@ -296,6 +296,13 @@ class Runtime:
             finally:
                 safe = not self.journal.blocked and self.journal.record is None
                 self.closed = safe
+                self.draining = not safe
+                # After a failed unload the timers confirm or repeat the restore; at HA stop
+                # the journal carries it over the restart instead.
+                if safe or final:
+                    for cancel in self.cancels:
+                        cancel()
+                    self.cancels.clear()
                 if not safe:
                     self.status = "recovery_blocked" if self.journal.blocked else "recovery_pending"
                 self.notify()

@@ -17,6 +17,7 @@ from .planner.core import (
     build_hourly_profile,
     decide,
 )
+from .planner.forecast import solar_day as forecast_solar_day
 from .storage import finite
 
 _LOGGER = logging.getLogger(__name__)
@@ -101,7 +102,8 @@ def join_statistics(raw, keys, zone):
     ]
 
 
-async def read_statistics(hass, keys, start, end, zone):
+async def hourly_changes(hass, keys, start, end):
+    """Hourly energy changes in kWh; every key needs energy statistics."""
     from functools import partial
 
     from homeassistant.components.recorder import get_instance
@@ -116,7 +118,7 @@ async def read_statistics(hass, keys, start, end, zone):
         for k in keys
     ):
         raise ValueError("statistics_unit_or_source_missing")
-    rows = await instance.async_add_executor_job(
+    return await instance.async_add_executor_job(
         statistics_during_period,
         hass,
         start.astimezone(UTC),
@@ -126,34 +128,14 @@ async def read_statistics(hass, keys, start, end, zone):
         {"energy": "kWh"},
         {"change"},
     )
-    return join_statistics(rows, keys, zone)
+
+
+async def read_statistics(hass, keys, start, end, zone):
+    return join_statistics(await hourly_changes(hass, keys, start, end), keys, zone)
 
 
 async def read_daily_pv(hass, entity, start, end):
-    from functools import partial
-
-    from homeassistant.components.recorder import get_instance
-    from homeassistant.components.recorder.statistics import get_metadata, statistics_during_period
-
-    instance = get_instance(hass)
-    metadata = await instance.async_add_executor_job(
-        partial(get_metadata, hass, statistic_ids={entity})
-    )
-    if entity not in metadata or metadata[entity][1].get("unit_of_measurement") not in (
-        "Wh",
-        "kWh",
-    ):
-        raise ValueError("pv_statistics_unit_invalid")
-    raw = await instance.async_add_executor_job(
-        statistics_during_period,
-        hass,
-        start.astimezone(UTC),
-        end.astimezone(UTC),
-        {entity},
-        "hour",
-        {"energy": "kWh"},
-        {"change"},
-    )
+    raw = await hourly_changes(hass, [entity], start, end)
     values = {}
     duplicates = set()
     for row in raw.get(entity, []):
@@ -227,7 +209,8 @@ class SourceReader:
         if units is not None and state.attributes.get("unit_of_measurement") not in units:
             raise ValueError(f"source_unit_invalid: {key}")
         if units == {"kWh", "Wh"} and state.attributes.get("unit_of_measurement") == "Wh":
-            low, high = low * 1000, high * 1000
+            # Energy always comes back in kWh.
+            return finite(float(state.state), low * 1000, high * 1000) / 1000
         return finite(float(state.state), low, high)
 
     async def refresh(self):
@@ -265,7 +248,9 @@ class SourceReader:
                     self.hass, keys, midnight - timedelta(days=14), midnight, now.tzinfo
                 )
                 self.history_day = now.date()
-            if self.prices_fetched is None or (now - self.prices_fetched).total_seconds() >= 60:
+            # Prices are published once a day; one fetch per hour picks up tomorrow's in time.
+            hour = now.replace(minute=0, second=0, microsecond=0)
+            if self.prices_fetched is None or hour > self.prices_fetched:
                 response = await self.hass.services.async_call(
                     "tibber",
                     "get_prices",
@@ -323,25 +308,7 @@ class SourceReader:
             tomorrow = self.numeric(
                 data["forecast_tomorrow_entity"], now, 3600, units={"kWh", "Wh"}
             )
-            if (
-                self.hass.states.get(data["forecast_remaining_entity"]).attributes[
-                    "unit_of_measurement"
-                ]
-                == "Wh"
-            ):
-                today /= 1000
-            if (
-                self.hass.states.get(data["forecast_tomorrow_entity"]).attributes[
-                    "unit_of_measurement"
-                ]
-                == "Wh"
-            ):
-                tomorrow /= 1000
-            solar_day = (
-                now.date() + timedelta(days=1)
-                if sun.state == "below_horizon" and now.hour >= 12
-                else now.date()
-            ).isoformat()
+            solar_day = forecast_solar_day(now, sun.state == "below_horizon").isoformat()
             inp = PlannerInput(
                 now=now,
                 prices=self.prices,
@@ -450,20 +417,15 @@ class SourceReader:
             actual, count = await read_daily_pv(
                 self.hass, data["pv_entity"], start, start + timedelta(days=1)
             )
-            if count >= 23:
+            # Late statistics may still complete a day; one still short after a week never
+            # will, so close it without a ratio and let the next probe start.
+            if count >= 23 or state.probe_day < now.date() - timedelta(days=7):
                 state = learn_day(state, day=state.probe_day, actual_kwh=actual, hourly_rows=count)
         if now.hour >= 5:
             try:
                 forecast = self.numeric(
                     data["forecast_today_entity"], now, 3600, units={"kWh", "Wh"}
                 )
-                if (
-                    self.hass.states.get(data["forecast_today_entity"]).attributes[
-                        "unit_of_measurement"
-                    ]
-                    == "Wh"
-                ):
-                    forecast /= 1000
                 state = capture_probe(state, day=now.date(), forecast_kwh=forecast)
             except KeyError, ValueError, TypeError:
                 pass

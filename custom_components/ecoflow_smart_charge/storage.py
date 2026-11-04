@@ -160,6 +160,7 @@ class PersistentSessionStore:
         self.learning = validate_learning({})
         self.full_marker_day = None
         self.blocked = False
+        self._saved = None
 
     def envelope(self, record=None, **changes):
         return {
@@ -192,12 +193,17 @@ class PersistentSessionStore:
             self.blocked = True
             return None
         self.record, self.learning, self.full_marker_day = record, learning, marker
+        self._saved = raw
         return record
 
     async def _save(self, record, **changes):
         if self.blocked:
             raise ValueError("journal recovery blocked")
-        await self._store.async_save(self.envelope(record, **changes))
+        envelope = self.envelope(record, **changes)
+        # The minute safety check repeats unchanged state; skip the flash write.
+        if envelope != self._saved:
+            await self._store.async_save(envelope)
+            self._saved = deepcopy(envelope)
         self.record = record
         for key, value in changes.items():
             setattr(self, key, deepcopy(value))

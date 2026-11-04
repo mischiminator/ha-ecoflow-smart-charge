@@ -139,7 +139,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             runtime.notify()
 
     async def stop(_event):
-        await runtime.async_close()
+        await runtime.async_close(final=True)
 
     from homeassistant.exceptions import HomeAssistantError
 

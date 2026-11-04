@@ -15,6 +15,7 @@ from homeassistant.helpers.event import async_track_state_change_event, async_tr
 from homeassistant.util import dt as dt_util
 
 from .entity import RuntimeEntity
+from .planner.forecast import solar_day
 from .sources import OWN_PV_KEY
 from .storage import finite
 
@@ -118,7 +119,7 @@ class PlanSensor(RuntimeEntity, SensorEntity):
                 return None
             forecast = (
                 inp.forecast_tomorrow
-                if inp.below_horizon and inp.now.hour >= 12
+                if solar_day(inp.now, inp.below_horizon) > inp.now.date()
                 else inp.forecast_today
             )
             return forecast * inp.pv_correction

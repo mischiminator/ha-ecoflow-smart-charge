@@ -29,5 +29,12 @@ async def test_shadow_with_pending_journal_remains_visible_on_close():
     await journal.async_capture_before_command("old", {"number.one": 13}, {"number.one": 100})
     calls = []
     runtime = Runtime("shadow", journal, lambda _: 100, lambda *args: calls.append(args))
+    cancelled = []
+    runtime.cancels.append(lambda: cancelled.append(True))
     assert not await runtime.async_close()
     assert journal.record is not None and calls == []
+    # A failed unload keeps the timers that finish the restore.
+    assert runtime.cancels and not cancelled
+    await journal.async_clear_after_readback()
+    assert await runtime.async_close()
+    assert cancelled == [True] and not runtime.cancels

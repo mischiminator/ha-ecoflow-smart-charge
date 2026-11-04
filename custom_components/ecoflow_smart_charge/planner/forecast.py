@@ -1,7 +1,7 @@
 """Live-formula 196 quarter-hour curve; elapsed seconds, local calendar days."""
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from math import sqrt
 
 
@@ -21,10 +21,15 @@ class SolarCurve:
     valid: bool
 
 
+def solar_day(now: datetime, below_horizon: bool | None) -> date:
+    """The day whose sun fills the batteries: after the afternoon sunset, tomorrow."""
+    return now.date() + timedelta(days=1) if below_horizon and now.hour >= 12 else now.date()
+
+
 def build_curve(value) -> SolarCurve:
     today = value.now.date()
     tomorrow = today + timedelta(days=1)
-    solar_day = tomorrow if value.below_horizon and value.now.hour >= 12 else today
+    target = solar_day(value.now, value.below_horizon)
     now_ts = value.now.timestamp()
     start = int(now_ts // 900) * 900
     raw = []
@@ -46,8 +51,8 @@ def build_curve(value) -> SolarCurve:
             if day in denominators and denominators[day] > 0
             else 0.0
         )
-        daylight = day == solar_day and ts < value.sunset.timestamp()
+        daylight = day == target and ts < value.sunset.timestamp()
         if daylight:
             surplus += max(solar - load, 0) * sqrt(value.efficiency)
         rows.append(Interval(ts, load, solar, daylight))
-    return SolarCurve(solar_day.isoformat(), tuple(rows), surplus, valid)
+    return SolarCurve(target.isoformat(), tuple(rows), surplus, valid)
