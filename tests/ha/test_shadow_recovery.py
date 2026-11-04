@@ -20,6 +20,6 @@ async def test_pending_shadow_restore_never_calls_hardware():
     await journal.async_capture_before_command("prior", {"number.test": 17}, {"number.test": 100})
     calls = []
     runtime = Runtime("shadow", journal, lambda _: 100, lambda *args: calls.append(args))
-    assert not await runtime.async_restore()
+    assert not await runtime._restore()
     assert calls == []
     assert journal.record is not None

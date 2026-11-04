@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
 from datetime import UTC, datetime
 from uuid import uuid4
 
 from homeassistant.exceptions import HomeAssistantError
 
-from .planner.core import MAX_BATTERIES
 from .storage import finite
 
 # Forecasts move every quarter hour; smaller target changes are not worth a command.
@@ -65,23 +63,20 @@ class Runtime:
     async def _gate(self):
         if self.closed or self.journal.blocked or self._evaluate is None:
             return {"valid": False, "allowed": False, "master": False}
-        gate = await self._maybe_await(self._evaluate())
+        gate = await self._evaluate()
         self.last_snapshot = gate
         return gate
 
     def _mapping_valid(self):
-        return (
-            1 <= len(self.writers) <= MAX_BATTERIES
-            and len(set(self.writers)) == len(self.writers)
-            and (
-                self.journal.record is None
-                or set(self.journal.record.reserves_before) == set(self.writers)
-            )
+        # Count and uniqueness are fixed by the config flow; a session must match the mapping.
+        return bool(self.writers) and (
+            self.journal.record is None
+            or set(self.journal.record.reserves_before) == set(self.writers)
         )
 
     async def _reported(self, entity, desired, *, unchanged_ok=False):
         try:
-            value, stamp = await self._maybe_await(self._read(entity))
+            value, stamp = await self._read(entity)
             value = finite(float(value), 3)
             now = datetime.now(UTC)
             record = self.journal.record
@@ -104,7 +99,6 @@ class Runtime:
                     and (now - datetime.fromisoformat(started)).total_seconds() >= UNCHANGED_GRACE
                 ):
                     return False
-            await self.journal.async_evidence(entity, value, stamp.isoformat())
             return True
         except TypeError, ValueError, AttributeError, KeyError:
             return False
@@ -153,7 +147,7 @@ class Runtime:
                 break
             try:
                 async with asyncio.timeout(10):
-                    await self._maybe_await(self._write(entity, target))
+                    await self._write(entity, target)
             except HomeAssistantError, ValueError, TypeError, TimeoutError, OSError:
                 self.last_error = "device_command_failed"
         # Even an ACK with synchronous state update is only confirmed on next observation.
@@ -181,12 +175,6 @@ class Runtime:
         gate = await self._gate()
         return all(gate.get(k) for k in ("valid", "allowed", "master"))
 
-    async def async_start(self, reserves_before=None):
-        async with self._lock:
-            result = await self._start(reserves_before)
-            self.notify()
-            return result
-
     async def _start(self, reserves_before):
         gate = await self._gate()
         if self.draining or self.mode != "active" or not self._mapping_valid():
@@ -197,10 +185,7 @@ class Runtime:
         if not all(gate.get(k) for k in ("valid", "allowed", "master")):
             return False
         if reserves_before is None:
-            reserves_before = {
-                e: finite(float((await self._maybe_await(self._read(e)))[0]), 3)
-                for e in self.writers
-            }
+            reserves_before = {e: finite(float((await self._read(e))[0]), 3) for e in self.writers}
         if set(reserves_before) != set(self.writers):
             return False
         try:
@@ -217,19 +202,6 @@ class Runtime:
         )
         return await self._execute(targets, restore=False)
 
-    async def async_retry_charge(self):
-        async with self._lock:
-            record = self.journal.record
-            if record is None or record.phase not in (
-                "intent_persisted",
-                "charge_pending",
-                "charging",
-            ):
-                return False
-            result = await self._execute(self._charge_targets(), restore=False)
-            self.notify()
-            return result
-
     async def _restore(self):
         record = self.journal.record
         if self.journal.blocked:
@@ -245,12 +217,6 @@ class Runtime:
             await self.journal.async_set_marker(record.solar_day)
         return await self._execute(dict(record.reserves_before), restore=True)
 
-    async def async_restore(self):
-        async with self._lock:
-            result = await self._restore()
-            self.notify()
-            return result
-
     async def async_recalculate(self):
         async with self._lock:
             gate = await self._gate()
@@ -258,7 +224,7 @@ class Runtime:
             if self.mode == "active":
                 record = self.journal.record
                 if record and (
-                    record.phase in ("restore_pending", "recovery_pending")
+                    record.phase == "restore_pending"
                     or gate.get("full")
                     or not all(gate.get(k) for k in ("valid", "allowed", "master"))
                 ):
@@ -307,7 +273,3 @@ class Runtime:
                     self.status = "recovery_blocked" if self.journal.blocked else "recovery_pending"
                 self.notify()
             return safe
-
-    @staticmethod
-    async def _maybe_await(value):
-        return await value if inspect.isawaitable(value) else value

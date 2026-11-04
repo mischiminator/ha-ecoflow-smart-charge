@@ -7,15 +7,15 @@
         "description": "EcoFlow-Geräte und Anbieter-Einträge auswählen; alle Entitäten werden automatisch gefunden. Keine Cloud-Zugangsdaten. Neue Einträge starten im Shadow-Modus.",
         "data": {
           "name": "Name",
-          "battery_devices": "EcoFlow-Batterien (eine oder mehrere)",
+          "battery_devices": "EcoFlow-Akkus (einer oder mehrere)",
           "meter_device": "EcoFlow Smart Meter (Netz-Saldo)",
           "forecast_entry": "Forecast.Solar-Eintrag",
           "prices_entry": "Tibber-Prices-Eintrag",
           "pv_entity": "Vorhandener PV-Energiezähler (optional)",
-          "tariff_key": "Tibber-Zuhause"
+          "tariff_key": "Tibber-Haushalt"
         },
         "data_description": {
-          "pv_entity": "Übernimmt den Verlauf eines vorhandenen Riemann-PV-Sensors. Leer lassen, dann integriert die Integration die PV-Leistung der Batterien selbst (das Lastprofil braucht dann erst einige Tage Verlauf)."
+          "pv_entity": "Übernimmt den Verlauf eines vorhandenen Riemann-PV-Sensors. Leer lassen, dann berechnet die Integration die PV-Energie selbst aus der PV-Leistung der Akkus (das Lastprofil braucht dann erst einige Tage Verlauf)."
         }
       },
       "reconfigure": {
@@ -23,28 +23,27 @@
         "description": "Nur ohne offene Sitzung.",
         "data": {
           "name": "Name",
-          "battery_devices": "EcoFlow-Batterien (eine oder mehrere)",
+          "battery_devices": "EcoFlow-Akkus (einer oder mehrere)",
           "meter_device": "EcoFlow Smart Meter (Netz-Saldo)",
           "forecast_entry": "Forecast.Solar-Eintrag",
           "prices_entry": "Tibber-Prices-Eintrag",
           "pv_entity": "Vorhandener PV-Energiezähler (optional)",
-          "tariff_key": "Tibber-Zuhause"
+          "tariff_key": "Tibber-Haushalt"
         },
         "data_description": {
-          "pv_entity": "Übernimmt den Verlauf eines vorhandenen Riemann-PV-Sensors. Leer lassen, dann integriert die Integration die PV-Leistung der Batterien selbst (das Lastprofil braucht dann erst einige Tage Verlauf)."
+          "pv_entity": "Übernimmt den Verlauf eines vorhandenen Riemann-PV-Sensors. Leer lassen, dann berechnet die Integration die PV-Energie selbst aus der PV-Leistung der Akkus (das Lastprofil braucht dann erst einige Tage Verlauf)."
         }
       }
     },
     "error": {
-      "battery_count_invalid": "Mindestens eine EcoFlow-Batterie auswählen (höchstens 10), jede nur einmal.",
-      "duplicate_reserves": "Jede Batterie-Entität muss eindeutig sein.",
+      "battery_count_invalid": "Mindestens einen EcoFlow-Akku auswählen (höchstens 10), jeden nur einmal.",
       "source_invalid": "Fehlende, nicht verfügbare, falsche oder doppelte Quelle bzw. leerer Tarifschlüssel.",
       "unit_invalid": "Einheit oder Wert der Quelle ist ungültig.",
       "device_entities_missing": "Einem ausgewählten Gerät oder Eintrag fehlt eine benötigte Entität (SOC, Reserve, Self-powered, Lade-/Entladeenergie, PV-Leistung, Netzenergie, Prognose, Preis oder Bestpreis-Zeitraum), oder sie ist deaktiviert."
     },
     "abort": {
       "already_configured": "Mindestens ein Reserve-Ziel gehört bereits zu einem anderen Eintrag.",
-      "recovery_pending": "Offene Recovery: Quellenzuordnung darf nicht geändert werden.",
+      "recovery_pending": "Offene Wiederherstellung: Quellenzuordnung darf nicht geändert werden.",
       "reconfigure_successful": "Quellen neu konfiguriert; Eintrag wird neu geladen."
     }
   },
@@ -52,30 +51,27 @@
     "step": {
       "init": {
         "title": "Steuerungsoptionen",
-        "description": "Shadow berechnet den Plan ohne Gerätebefehle; Aktiv steuert die Batteriereserven.",
+        "description": "Shadow berechnet den Plan ohne Gerätebefehle; Aktiv steuert die Akkureserven.",
         "data": {
           "mode": "Steuerungsmodus",
           "minimum_price_advantage_percent": "Mindestpreisvorteil (%)",
           "charge_ceiling_ct": "Maximaler Ladepreis (ct/kWh)",
-          "master": "Preisladung erlauben",
+          "master": "Preisladung erlaubt",
           "efficiency": "Gesamtwirkungsgrad (Anteil 0..1)",
-          "wear_cost_ct": "Verschleiß (ct/kWh geliefert)",
+          "wear_cost_ct": "Verschleißkosten (ct/kWh geliefert)",
           "minimum_net_saving_ct": "Mindestnettoersparnis (ct/kWh geliefert)",
-          "capacity_kwh": "Rückfall-Kapazität je Batterie (unbekannte Modelle, kWh)"
+          "capacity_kwh": "Rückfall-Kapazität je Akku (unbekannte Modelle, kWh)"
         }
       }
     },
     "error": {
-      "invalid_setting": "Ungültiger oder nicht endlicher Wert außerhalb der Grenzen.",
-      "invalid_master": "Master muss ein Wahrheitswert sein.",
-      "invalid_mode": "Modus muss Shadow oder Aktiv sein.",
-      "unknown_setting": "Unbekannte Einstellung."
+      "invalid_setting": "Ungültiger oder nicht endlicher Wert außerhalb der Grenzen."
     }
   },
   "services": {
     "recalculate": {
       "name": "Plan neu berechnen",
-      "description": "Quellen über die Runtime neu auswerten. Shadow sendet niemals Gerätebefehle; im aktiven Modus gelten die normalen Sicherheits- und Recovery-Sperren.",
+      "description": "Quellen neu auswerten. Shadow sendet niemals Gerätebefehle; im aktiven Modus gelten die normalen Sicherheits- und Wiederherstellungssperren.",
       "fields": {
         "config_entry_id": {
           "name": "Integrationseintrag",

@@ -22,23 +22,23 @@ from .storage import finite
 # Longer gaps (HA stalled or stopped) are skipped instead of extrapolated.
 MAX_GAP = timedelta(minutes=10)
 
-KEYS = {
-    "status": "Controller status",
-    "reason": "Decision reason",
-    "missing_energy_kwh": "Missing energy",
-    "grid_kwh": "Grid charge energy",
-    "target_soc": "Grid charge target",
-    "solar_surplus_kwh": "Solar surplus",
-    "avoided_price_ct": "Avoided price",
-    "net_saving_ct": "Net saving",
-    "price_advantage_percent": "Price advantage",
-    "pv_correction": "PV correction",
-    "full_marker_day": "Full marker day",
-    "solar_day": "Planned solar day",
-    "plan_updated": "Plan updated",
-    "profile_samples": "Profile samples",
-    "corrected_forecast_kwh": "Corrected solar forecast",
-}
+KEYS = (
+    "status",
+    "reason",
+    "missing_energy_kwh",
+    "grid_kwh",
+    "target_soc",
+    "solar_surplus_kwh",
+    "avoided_price_ct",
+    "net_saving_ct",
+    "price_advantage_percent",
+    "pv_correction",
+    "full_marker_day",
+    "solar_day",
+    "plan_updated",
+    "profile_samples",
+    "corrected_forecast_kwh",
+)
 
 
 def card_sources(hass, data):
@@ -69,8 +69,8 @@ def card_sources(hass, data):
 class PlanSensor(RuntimeEntity, SensorEntity):
     _unrecorded_attributes = frozenset({"batteries", "price_entity", "price_window_entity"})
 
-    def __init__(self, entry, key, name):
-        super().__init__(entry, key, name)
+    def __init__(self, entry, key):
+        super().__init__(entry, key)
         if key.endswith("_kwh") or key == "grid_kwh":
             self._attr_native_unit_of_measurement = "kWh"
         elif key.endswith("_ct"):
@@ -136,7 +136,7 @@ class PVEnergySensor(RuntimeEntity, RestoreSensor):
     _attr_suggested_display_precision = 3
 
     def __init__(self, entry):
-        super().__init__(entry, OWN_PV_KEY, "PV energy")
+        super().__init__(entry, OWN_PV_KEY)
         self.sources = tuple(entry.data["pv_power_entities"])
         self.total = 0.0
         self.watts = None
@@ -185,7 +185,7 @@ class PVEnergySensor(RuntimeEntity, RestoreSensor):
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    entities = [PlanSensor(entry, key, name) for key, name in KEYS.items()]
+    entities = [PlanSensor(entry, key) for key in KEYS]
     if not entry.data.get("pv_entity") and entry.data.get("pv_power_entities"):
         entities.append(PVEnergySensor(entry))
     async_add_entities(entities)

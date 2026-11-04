@@ -26,28 +26,30 @@ async def test_restart_after_each_durable_charge_boundary(save_number, prior_wri
 
     disk.async_save = crash_after_save
     with pytest.raises(asyncio.CancelledError):
-        await runtime.async_start(values)
+        await runtime._start(values)
     assert len(calls) == prior_writes
     assert disk.data["session"]["reserves_before"] == originals
     disk.async_save = save
-    journal = PersistentSessionStore(disk, expected_exists=True)
+    journal = PersistentSessionStore(disk)
     await journal.async_load()
     gate["allowed"] = False
 
+    async def read(e):
+        return values[e], stamps[e]
+
+    async def write(e, v):
+        calls.append((e, v))
+
+    async def evaluate():
+        return gate.copy()
+
     def restart(mode):
-        return Runtime(
-            mode,
-            journal,
-            lambda e: (values[e], stamps[e]),
-            lambda e, v: calls.append((e, v)),
-            writers=tuple(values),
-            evaluate=lambda: gate.copy(),
-        )
+        return Runtime(mode, journal, read, write, writers=tuple(values), evaluate=evaluate)
 
     # A shadow restart keeps the session pending and sends nothing.
     shadow = restart("shadow")
     await shadow.async_recalculate()
-    assert not await shadow.async_restore()
+    assert not await shadow._restore()
     assert shadow.status == "recovery_pending"
     assert len(calls) == prior_writes
     # An active restart restores the saved originals once charging is no longer allowed.
@@ -58,22 +60,22 @@ async def test_restart_after_each_durable_charge_boundary(save_number, prior_wri
     freezer.tick(1)
     for entity in list(values)[:2]:
         stamps[entity] = datetime.now(UTC)
-    assert not await restarted.async_restore()
+    assert not await restarted._restore()
     assert journal.record is not None
     assert len(calls) == prior_writes + 3  # retry is rate-limited
     freezer.tick(31)
-    assert not await restarted.async_restore()
+    assert not await restarted._restore()
     assert calls[-1] == (list(values)[2], originals[list(values)[2]])
     assert len(calls) == prior_writes + 4
     freezer.tick(1)
     stamps[list(values)[2]] = datetime.now(UTC)
-    assert await restarted.async_restore()
+    assert await restarted._restore()
     assert journal.record is None and disk.data["session"] is None
 
 
 async def test_full_marker_save_failure_prevents_restore_commands():
     runtime, disk, values, _stamps, calls, gate = await setup()
-    await runtime.async_start(values)
+    await runtime._start(values)
     prior = len(calls)
     gate["full"] = True
     save = disk.async_save
@@ -85,7 +87,7 @@ async def test_full_marker_save_failure_prevents_restore_commands():
 
     disk.async_save = fail_marker
     with pytest.raises(OSError):
-        await runtime.async_restore()
+        await runtime._restore()
     assert len(calls) == prior
     assert runtime.journal.record is not None
     assert disk.data["full_marker_day"] is None

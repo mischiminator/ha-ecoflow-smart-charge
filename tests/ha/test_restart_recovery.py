@@ -35,7 +35,6 @@ async def test_restart_pending_shadow_does_not_write_until_active_restores(hass,
         domain=DOMAIN,
         data={
             "reserve_entities": [f"number.reserve_{i}" for i in range(3)],
-            "journal_initialized": True,
         },
         options={"mode": "shadow"},
     )

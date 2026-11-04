@@ -6,7 +6,7 @@ const EFS_CARD = 'ecoflow-smart-charge-card';
 
 const EFS_TEXT = {
   de: {
-    title: 'EcoFlow Preisladung',
+    title: 'EcoFlow Smart Charge',
     subtitle: n => `Solargeführt · ${n} ${n === 1 ? 'Akku' : 'Akkus'}`,
     shadowSubtitle: 'Shadow-Modus · keine Gerätebefehle',
     notFound: 'Keine EcoFlow-Smart-Charge-Instanz gefunden.',
@@ -16,13 +16,13 @@ const EFS_TEXT = {
     status: {
       shadow: 'Shadow-Modus', off: 'Ausgeschaltet', waiting: 'Aktiv · wartet', allowed: 'Ladung freigegeben',
       charging: 'Netzladung läuft', charge_pending: 'Reserve wird gesetzt', charge_blocked: 'Ladung gesperrt',
-      restore_pending: 'Reserve wird zurückgestellt', restored: 'Reserve wiederhergestellt',
+      restore_pending: 'Reserve wird zurückgestellt',
       recovery_pending: 'Wiederherstellung offen', recovery_blocked: 'Wiederherstellung blockiert',
     },
-    masterOff: 'Die automatische Netzladung ist ausgeschaltet. Solarladung bleibt davon unberührt.',
+    masterOff: 'Die Preisladung ist ausgeschaltet. Solarladung bleibt davon unberührt.',
     noPlan: 'Warte auf eine gültige Planung.',
     dataMissing: 'Es fehlen gültige Preis-, Solar- oder Verbrauchsdaten.',
-    selfPoweredHint: 'Für den aktiven Modus müssen alle Akkus auf Self-powered stehen.',
+    selfPoweredHint: 'Für den aktiven Modus müssen alle Akkus im Eigenverbrauchsmodus (Self-powered) sein.',
     reasons: {
       eligible: 'Solar reicht nicht aus; Preis und erwartete Ersparnis passen.',
       target_reached: 'Netzanteil geladen – die Reserve wird bis zum Ende des Bestpreisfensters gehalten.',
@@ -35,7 +35,6 @@ const EFS_TEXT = {
       insufficient_priced_consumption: 'Im bekannten Preisausblick ist kein zusätzlicher Akku-Verbrauch prognostiziert.',
       nonpositive_reference_price: 'Der spätere Bezugspreis ist null oder negativ; der Preisvergleich sperrt die Netzladung.',
       price_advantage_too_low: 'Der Preisvorteil gegenüber dem späteren Netzbezug liegt unter deinem Mindestwert.',
-      price_advantage_invalid: 'Der eingestellte Mindest-Preisvorteil ist ungültig.',
       net_saving_too_low: 'Die erwartete Nettoersparnis ist zu gering.',
       protection_mode_required: 'Alle Akkus müssen im Eigenverbrauchsmodus (Self-powered) sein.',
       profile_invalid: 'Das Verbrauchsprofil hat noch zu wenig Verlauf (mindestens 3 Werte je Stunde).',
@@ -43,7 +42,7 @@ const EFS_TEXT = {
     goal: v => `Ladeziel ${v} %`,
     noGoal: 'Kein Netzladeziel',
     price: 'Strompreis jetzt',
-    priceDetail: (c, a, m) => `Ladegrenze ${c} ct/kWh · Preisvorteil ${a} % / min. ${m} %`,
+    priceDetail: (c, a, m) => `Max. Ladepreis ${c} ct/kWh · Preisvorteil ${a} % / min. ${m} %`,
     solar: 'Solar-Ladeüberschuss',
     solarDetail: 'Nach erwartetem Haushaltsverbrauch',
     saving: 'Nettoersparnis · Prognose',
@@ -56,7 +55,7 @@ const EFS_TEXT = {
     windowEnd: 'Ende',
     noWindow: 'Kein anstehendes Fenster veröffentlicht.',
     windowUnavailable: 'Fensterdaten nicht verfügbar.',
-    total: 'Batteriestand gesamt',
+    total: 'Akkustand gesamt',
     totalDetail: 'Kapazitätsgewichtet über alle Akkus',
     totalUnavailable: 'Gesamtstand nicht verfügbar.',
     reserve: 'Reserve',
@@ -64,33 +63,31 @@ const EFS_TEXT = {
     footer: (s, f) => `Profil ${s} Werte/Stunde · PV-Faktor ${f}`,
     planned: t => `Planung ${t}`,
     notPlanned: 'Noch keine Planung',
-    toggleOn: 'Automatische Preisladung einschalten',
-    toggleOff: 'Automatische Preisladung ausschalten',
+    toggleOn: 'Preisladung einschalten',
+    toggleOff: 'Preisladung ausschalten',
     settings: 'Konfiguration',
     dialogTitle: 'Preisladung konfigurieren',
     close: 'Schließen',
     intro: 'Änderungen werden erst mit „Speichern“ übernommen. Die Solar- und Wirtschaftlichkeitsprüfung bleibt immer aktiv.',
-    master: 'Automatische Preisladung',
-    mode: 'Controller-Modus',
+    master: 'Preisladung erlaubt',
+    mode: 'Steuerungsmodus',
     modes: { shadow: 'Shadow – nur planen', active: 'Aktiv – Reserven steuern' },
     fields: {
       charge_ceiling_ct: ['Maximaler Ladepreis', 'Endpreis inklusive variabler Preisbestandteile'],
-      minimum_net_saving_ct: ['Mindest-Nettoersparnis', 'Je abgegebener kWh, nach Verlusten und Verschleiß'],
-      minimum_price_advantage: ['Mindest-Preisvorteil', 'Ladepreis gegenüber dem verbrauchsgewichteten späteren Bezugspreis'],
+      minimum_net_saving_ct: ['Mindestnettoersparnis', 'Je abgegebener kWh, nach Verlusten und Verschleiß'],
+      minimum_price_advantage: ['Mindestpreisvorteil', 'Ladepreis gegenüber dem verbrauchsgewichteten späteren Bezugspreis'],
       efficiency: ['Gesamtwirkungsgrad', 'Netz → Akku → Haushalt; Rechenannahme'],
-      wear_cost_ct: ['Verschleiß-Aufschlag', 'Je abgegebener kWh; Rechenannahme'],
+      wear_cost_ct: ['Verschleißkosten', 'Je abgegebener kWh; Rechenannahme'],
       capacity_kwh: ['Rückfall-Kapazität', 'Nur für Akkus, deren Modell keine bekannte Kapazität hat'],
     },
     info: f => `PV-Faktor ${f} · wird anhand gemessener Erzeugung selbstständig weitergelernt. Aus dem Netz wird nur geladen, was der erwartete Solarüberschuss nicht schafft. Bei zu hohem Preis, fehlender Ersparnis oder ungültigen Daten wird die vorherige Backup-Reserve wiederhergestellt. Der EcoFlow-Betriebsmodus wird nie verändert.`,
     cancel: 'Abbrechen',
     save: 'Speichern',
     savingProgress: 'Speichert …',
-    saved: 'Gespeichert und von Home Assistant bestätigt.',
+    saved: 'Gespeichert.',
     noChanges: 'Keine Änderungen – die aktuellen Einstellungen bleiben erhalten.',
     invalidNumbers: 'Bitte gültige Zahlen eingeben.',
-    changedOutside: 'Ein Wert wurde zwischenzeitlich außerhalb dieses Dialogs geändert. Bitte schließen und erneut öffnen.',
     partlyApplied: n => `${n} Änderung(en) wurden bereits übernommen. `,
-    notConfirmed: e => `Home Assistant hat den neuen Wert nicht bestätigt: ${e}`,
     settingsUnavailable: e => `Konfiguration nicht verfügbar: ${e}`,
     editorTitle: 'Titel',
     editorDevice: 'EcoFlow-Smart-Charge-Instanz',
@@ -106,10 +103,10 @@ const EFS_TEXT = {
     status: {
       shadow: 'Shadow mode', off: 'Switched off', waiting: 'Active · waiting', allowed: 'Charging allowed',
       charging: 'Grid charging', charge_pending: 'Setting reserve', charge_blocked: 'Charging blocked',
-      restore_pending: 'Restoring reserve', restored: 'Reserve restored',
+      restore_pending: 'Restoring reserve',
       recovery_pending: 'Recovery pending', recovery_blocked: 'Recovery blocked',
     },
-    masterOff: 'Automatic grid charging is switched off. Solar charging is not affected.',
+    masterOff: 'Price charging is switched off. Solar charging is not affected.',
     noPlan: 'Waiting for a valid plan.',
     dataMissing: 'Valid price, solar or consumption data are missing.',
     selfPoweredHint: 'Active mode needs every battery in Self-powered mode.',
@@ -125,7 +122,6 @@ const EFS_TEXT = {
       insufficient_priced_consumption: 'No additional battery consumption is forecast within the known prices.',
       nonpositive_reference_price: 'The later grid price is zero or negative; the price comparison blocks charging.',
       price_advantage_too_low: 'The price advantage is below your minimum.',
-      price_advantage_invalid: 'The configured minimum price advantage is invalid.',
       net_saving_too_low: 'The expected net saving is too low.',
       protection_mode_required: 'All batteries must be in Self-powered mode.',
       profile_invalid: 'The consumption profile needs more history (at least 3 values per hour).',
@@ -133,7 +129,7 @@ const EFS_TEXT = {
     goal: v => `Charge target ${v} %`,
     noGoal: 'No grid target',
     price: 'Price now',
-    priceDetail: (c, a, m) => `Ceiling ${c} ct/kWh · advantage ${a} % / min. ${m} %`,
+    priceDetail: (c, a, m) => `Price ceiling ${c} ct/kWh · advantage ${a} % / min. ${m} %`,
     solar: 'Solar charge surplus',
     solarDetail: 'After expected household load',
     saving: 'Net saving · forecast',
@@ -154,13 +150,13 @@ const EFS_TEXT = {
     footer: (s, f) => `Profile ${s} values/hour · PV factor ${f}`,
     planned: t => `Planned ${t}`,
     notPlanned: 'Not planned yet',
-    toggleOn: 'Switch automatic price charging on',
-    toggleOff: 'Switch automatic price charging off',
+    toggleOn: 'Switch price charging on',
+    toggleOff: 'Switch price charging off',
     settings: 'Settings',
     dialogTitle: 'Configure price charging',
     close: 'Close',
     intro: 'Changes apply only after “Save”. The solar and economic checks always stay active.',
-    master: 'Automatic price charging',
+    master: 'Price charging enabled',
     mode: 'Controller mode',
     modes: { shadow: 'Shadow – plan only', active: 'Active – control reserves' },
     fields: {
@@ -168,19 +164,17 @@ const EFS_TEXT = {
       minimum_net_saving_ct: ['Minimum net saving', 'Per delivered kWh, after losses and wear'],
       minimum_price_advantage: ['Minimum price advantage', 'Charge price versus the consumption-weighted later price'],
       efficiency: ['Total efficiency', 'Grid → battery → house; model assumption'],
-      wear_cost_ct: ['Wear surcharge', 'Per delivered kWh; model assumption'],
+      wear_cost_ct: ['Wear cost', 'Per delivered kWh; model assumption'],
       capacity_kwh: ['Fallback capacity', 'Only for batteries whose model has no known capacity'],
     },
     info: f => `PV factor ${f} · learned automatically from measured generation. The grid only charges what the expected solar surplus cannot fill. On a high price, missing saving or invalid data the previous backup reserve is restored. The EcoFlow operating mode is never changed.`,
     cancel: 'Cancel',
     save: 'Save',
     savingProgress: 'Saving …',
-    saved: 'Saved and confirmed by Home Assistant.',
+    saved: 'Saved.',
     noChanges: 'No changes – the current settings stay as they are.',
     invalidNumbers: 'Please enter valid numbers.',
-    changedOutside: 'A value was changed outside this dialog. Please close and open it again.',
     partlyApplied: n => `${n} change(s) were already applied. `,
-    notConfirmed: e => `Home Assistant did not confirm the new value: ${e}`,
     settingsUnavailable: e => `Settings unavailable: ${e}`,
     editorTitle: 'Title',
     editorDevice: 'EcoFlow Smart Charge instance',
@@ -197,9 +191,7 @@ const EFS_FIELDS = [
   ['capacity_kwh', 'kWh', 1],
 ];
 const EFS_GENERIC_REASONS = new Set([
-  'source_missing', 'sources_stale', 'prices_stale', 'current_price_mismatch', 'time_invalid',
-  'sunset_invalid', 'required_state_invalid', 'battery_data_invalid', 'parameters_invalid',
-  'forecast_profile_invalid', 'projection_invalid', 'price_data_invalid',
+  'source_missing', 'current_price_mismatch', 'sunset_invalid', 'forecast_profile_invalid',
 ]);
 
 const efsIcon = path => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"></path></svg>`;
@@ -244,6 +236,7 @@ class EcoFlowSmartChargeCard extends HTMLElement {
   setConfig(config) {
     if (config.device_id !== undefined && typeof config.device_id !== 'string') throw new Error('device_id must be a device ID.');
     this._config = { ...config };
+    this._resolvedFrom = null;
     this._render();
     this._update();
   }
@@ -383,7 +376,12 @@ class EcoFlowSmartChargeCard extends HTMLElement {
   _update() {
     if (!this._hass || !this._config || !this._refs) return;
     const t = this._t;
-    const resolved = this._resolve();
+    // hass is replaced on every state change in the house; the registry only on its own changes.
+    if (this._hass.entities !== this._resolvedFrom) {
+      this._resolvedFrom = this._hass.entities;
+      this._resolved = this._resolve();
+    }
+    const resolved = this._resolved;
     this._refs.empty.hidden = !resolved.error;
     this._refs.content.hidden = Boolean(resolved.error);
     if (resolved.error) { this._refs.empty.textContent = t[resolved.error]; return; }
@@ -529,14 +527,9 @@ class EcoFlowSmartChargeCard extends HTMLElement {
 
   _close() { if (!this._saving) this._refs.dialog.close(); }
 
-  // A service acknowledgement is not enough: read the state back from Home Assistant.
-  async _confirmed(domain, service, entity, data, expected) {
-    await this._hass.callService(domain, service, { entity_id: entity, ...data });
-    const readback = await this._hass.callApi('GET', 'states/' + entity);
-    const ok = typeof expected === 'number'
-      ? Number.isFinite(Number(readback.state)) && Math.abs(Number(readback.state) - expected) <= 1e-7
-      : readback.state === expected;
-    if (!ok) throw new Error(this._t.notConfirmed(entity));
+  // callService rejects when Home Assistant refuses the value.
+  _call(domain, service, entity, data = {}) {
+    return this._hass.callService(domain, service, { entity_id: entity, ...data });
   }
 
   async _toggle() {
@@ -546,7 +539,7 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     this._refs['card-error'].textContent = '';
     this._update();
     try {
-      await this._confirmed('switch', current === 'on' ? 'turn_off' : 'turn_on', id, {}, current === 'on' ? 'off' : 'on');
+      await this._call('switch', current === 'on' ? 'turn_off' : 'turn_on', id);
     } catch (e) {
       this._refs['card-error'].textContent = e.message || String(e);
     } finally {
@@ -562,16 +555,9 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     for (const [key, , scale] of EFS_FIELDS) {
       const value = Number(this._refs[`field-${key}`].value) / scale;
       if (!Number.isFinite(value)) { this._feedback(t.invalidNumbers, true); return; }
-      if (Math.abs(value - this._snapshot[key]) > 1e-9) {
-        if (this._number('number.' + key) !== this._snapshot[key]) { this._feedback(t.changedOutside, true); return; }
-        edits.push([key, +value.toFixed(6)]);
-      }
+      if (Math.abs(value - this._snapshot[key]) > 1e-9) edits.push([key, +value.toFixed(6)]);
     }
     const enabled = this._refs.enabled.checked, mode = this._refs.mode.value;
-    if ((this._state('switch.master')?.state === 'on') !== this._snapshot.enabled || this._state('select.mode')?.state !== this._snapshot.mode) {
-      this._feedback(t.changedOutside, true);
-      return;
-    }
     this._saving = true;
     let applied = 0;
     this._refs.save.textContent = t.savingProgress;
@@ -579,11 +565,11 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     this.shadowRoot.querySelectorAll('dialog button,dialog input,dialog select').forEach(e => { e.disabled = true; });
     try {
       // Stopping comes first and starting last, so no intermediate state widens permission.
-      if (enabled !== this._snapshot.enabled && !enabled) { await this._confirmed('switch', 'turn_off', this._id('switch.master'), {}, 'off'); this._snapshot.enabled = false; applied++; }
-      if (mode !== this._snapshot.mode && mode === 'shadow') { await this._confirmed('select', 'select_option', this._id('select.mode'), { option: mode }, mode); this._snapshot.mode = mode; applied++; }
-      for (const [key, value] of edits) { await this._confirmed('number', 'set_value', this._id('number.' + key), { value }, value); this._snapshot[key] = value; applied++; }
-      if (mode !== this._snapshot.mode) { await this._confirmed('select', 'select_option', this._id('select.mode'), { option: mode }, mode); this._snapshot.mode = mode; applied++; }
-      if (enabled !== this._snapshot.enabled) { await this._confirmed('switch', 'turn_on', this._id('switch.master'), {}, 'on'); this._snapshot.enabled = true; applied++; }
+      if (enabled !== this._snapshot.enabled && !enabled) { await this._call('switch', 'turn_off', this._id('switch.master')); this._snapshot.enabled = false; applied++; }
+      if (mode !== this._snapshot.mode && mode === 'shadow') { await this._call('select', 'select_option', this._id('select.mode'), { option: mode }); this._snapshot.mode = mode; applied++; }
+      for (const [key, value] of edits) { await this._call('number', 'set_value', this._id('number.' + key), { value }); this._snapshot[key] = value; applied++; }
+      if (mode !== this._snapshot.mode) { await this._call('select', 'select_option', this._id('select.mode'), { option: mode }); this._snapshot.mode = mode; applied++; }
+      if (enabled !== this._snapshot.enabled) { await this._call('switch', 'turn_on', this._id('switch.master')); this._snapshot.enabled = true; applied++; }
       this._feedback(applied ? t.saved : t.noChanges);
       this._refs.cancel.textContent = t.close;
     } catch (e) {
@@ -603,7 +589,7 @@ if (!window.customCards.some(c => c.type === EFS_CARD)) {
   window.customCards.push({
     type: EFS_CARD,
     name: 'EcoFlow Smart Charge',
-    description: 'Solar- und preisgeführte Akku-Ladung der Integration EcoFlow Smart Charge.',
+    description: 'Solar- and price-led battery charging for EcoFlow Smart Charge.',
     preview: true,
     documentationURL: 'https://github.com/mischiminator/ha-ecoflow-smart-charge',
   });

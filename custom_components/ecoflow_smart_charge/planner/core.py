@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from math import ceil, floor, sqrt
+from math import floor, sqrt
 
 from .forecast import build_curve
 from .learning import correction_from_ratios, learn_pv_correction
@@ -76,7 +76,6 @@ class PlannerInput:
     minimum_price_advantage_percent: float
     active_session: bool
     full_marker_for_solar_day: bool
-    sources_fresh: bool
     protection_mode: bool
     current_price_ct: float | None = None
     below_horizon: bool | None = None
@@ -91,7 +90,6 @@ class PlanResult:
     avoided_price_ct: float
     net_saving_ct: float
     price_advantage_percent: float | None
-    command_plan: tuple[str, ...] = ()
     solar_day: str | None = None
     coverage_kwh: float = 0.0
     target_ac_kwh: float = 0.0
@@ -150,76 +148,19 @@ def build_hourly_profile(
 
 
 def _reason(value: PlannerInput) -> str | None:
-    if not all(aware(t) for t in (value.now, value.price_series_updated, value.sunset)):
-        return "time_invalid"
+    """Plan-level gates; the reader has already range-checked every input."""
     if value.sunset.timestamp() <= value.now.timestamp():
         return "sunset_invalid"
-    if not 0 <= value.now.timestamp() - value.price_series_updated.timestamp() < PRICE_MAX_AGE:
-        return "prices_stale"
-    flags = (
-        value.best_price_window,
-        value.active_session,
-        value.full_marker_for_solar_day,
-        value.sources_fresh,
-        value.protection_mode,
-        value.below_horizon,
-    )
-    if any(type(f) is not bool for f in flags):
-        return "required_state_invalid"
-    if not value.sources_fresh:
-        return "sources_stale"
     if not value.protection_mode:
         return "protection_mode_required"
-    p = value.profile
-    if (
-        p.valid is not True
-        or any(len(v) != 24 for v in (p.house_by_hour, p.pv_by_hour, p.samples_by_hour))
-        or any(not number(v) or not 0 <= v <= 10 for v in (*p.house_by_hour, *p.pv_by_hour))
-        or any(type(n) is not int or n < 3 for n in p.samples_by_hour)
-    ):
+    if not value.profile.valid:
         return "profile_invalid"
-    if not 1 <= len(value.batteries) <= MAX_BATTERIES or any(
-        not number(b.soc)
-        or not number(b.reserve)
-        or not 0 <= b.soc <= 100
-        or not 3 <= b.reserve <= 100
-        or (b.capacity_kwh is not None and (not number(b.capacity_kwh) or b.capacity_kwh <= 0))
-        for b in value.batteries
-    ):
-        return "battery_data_invalid"
-    parameters = (
-        value.capacity_kwh,
-        value.efficiency,
-        value.wear_cost_ct,
-        value.charge_ceiling_ct,
-        value.minimum_net_saving_ct,
-        value.forecast_today,
-        value.forecast_tomorrow,
-        value.pv_correction,
-        value.current_price_ct,
-    )
-    if (
-        not all(number(v) for v in parameters)
-        or value.capacity_kwh <= 0
-        or not 0 < value.efficiency <= 1
-        or value.forecast_today < 0
-        or value.forecast_tomorrow < 0
-        or value.pv_correction < 0
-    ):
-        return "parameters_invalid"
-    if (
-        not number(value.minimum_price_advantage_percent)
-        or not 0 <= value.minimum_price_advantage_percent <= 100
-    ):
-        return "price_advantage_invalid"
     if not value.prices:
         return "price_gap"
     previous = None
     current_start = int(value.now.timestamp() // 900) * 900
     current = None
     for point in value.prices:
-        if not aware(point.starts_at) or not number(point.price_ct):
-            return "price_data_invalid"
         ts = point.starts_at.timestamp()
         if ts % 900 != 0 or (previous is not None and ts <= previous):
             return "price_gap"
@@ -241,11 +182,7 @@ def common_target(batteries, capacities, grid_kwh: float) -> float:
             c * max(level - b.soc, 0) / 100 for c, b in zip(capacities, batteries, strict=True)
         )
 
-    low, high = 0.0, 100.0
-    for _ in range(40):
-        middle = (low + high) / 2
-        low, high = (middle, high) if charged(middle) < grid_kwh else (low, middle)
-    return float(min(100, ceil(high - EPSILON)))
+    return float(next((level for level in range(101) if charged(level) >= grid_kwh - EPSILON), 100))
 
 
 def decide(value: PlannerInput) -> PlanResult:
@@ -258,11 +195,7 @@ def decide(value: PlannerInput) -> PlanResult:
         c * max(100 - b.soc, 0) / 100 for c, b in zip(capacities, value.batteries, strict=True)
     )
     curve = build_curve(value)
-    if (
-        not curve.valid
-        or not number(curve.surplus_kwh)
-        or any(not number(r.solar) or not number(r.load) for r in curve.rows)
-    ):
+    if not curve.valid:
         return PlanResult(
             False,
             "forecast_profile_invalid",
@@ -277,10 +210,6 @@ def decide(value: PlannerInput) -> PlanResult:
     solar = curve.surplus_kwh
     # Only the part the expected PV surplus cannot cover comes from the grid.
     grid = max(missing - solar, 0.0)
-    if not number(grid):
-        return PlanResult(
-            False, "projection_invalid", 0.0, 0.0, 0.0, 0.0, None, solar_day=curve.solar_day
-        )
     target_soc = common_target(value.batteries, capacities, grid)
     if value.active_session:
         # While the cheap window lasts, hold what is stored: the house runs on the grid.
@@ -290,10 +219,6 @@ def decide(value: PlannerInput) -> PlanResult:
         c * max(b.soc - b.reserve, 0) / 100 * root
         for c, b in zip(capacities, value.batteries, strict=True)
     )
-    if not all(number(n) for n in (missing, target, baseline)):
-        return PlanResult(
-            False, "projection_invalid", 0.0, 0.0, 0.0, 0.0, None, solar_day=curve.solar_day
-        )
     prices = {p.starts_at.timestamp(): p.price_ct for p in value.prices}
     current = value.current_price_ct
     covered, total, gap = 0.0, 0.0, False
@@ -315,12 +240,6 @@ def decide(value: PlannerInput) -> PlanResult:
     cost = current / value.efficiency + value.wear_cost_ct
     net = (avoided - cost) * fraction
     advantage = (avoided - current) / avoided * 100 if avoided > 0 else None
-    if not all(number(n) for n in (covered, avoided, fraction, cost, net)) or (
-        advantage is not None and not number(advantage)
-    ):
-        return PlanResult(
-            False, "projection_invalid", 0.0, 0.0, 0.0, 0.0, None, solar_day=curve.solar_day
-        )
     reason = "eligible"
     if value.full_marker_for_solar_day:
         reason = "already_full_for_solar_day"
@@ -339,8 +258,6 @@ def decide(value: PlannerInput) -> PlanResult:
         reason = "price_gap"
     elif covered <= 0:
         reason = "insufficient_priced_consumption"
-    elif not 0 <= value.minimum_price_advantage_percent <= 100:
-        reason = "price_advantage_invalid"
     elif avoided <= 0:
         reason = "nonpositive_reference_price"
     elif advantage + EPSILON < value.minimum_price_advantage_percent:

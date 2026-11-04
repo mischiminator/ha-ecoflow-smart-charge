@@ -31,7 +31,7 @@ jobs:
           python -m pip install -r requirements-lint.txt
           python -m pip check
       - name: Offline unit and real Home Assistant tests
-        run: python tools/run_tests.py --junitxml=pytest-results.xml
+        run: python -m pytest --junitxml=pytest-results.xml
       - name: Ruff lint
         run: python -m ruff check .
       - name: Ruff format

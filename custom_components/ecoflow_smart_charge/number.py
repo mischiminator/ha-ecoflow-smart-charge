@@ -11,9 +11,7 @@ class SettingNumber(RuntimeEntity, NumberEntity):
 
     def __init__(self, entry, key):
         super().__init__(
-            entry,
-            "minimum_price_advantage" if key == "minimum_price_advantage_percent" else key,
-            key.replace("_", " ").capitalize(),
+            entry, "minimum_price_advantage" if key == "minimum_price_advantage_percent" else key
         )
         self.setting = key
         self.default, self._attr_native_min_value, self._attr_native_max_value = SETTINGS[key]

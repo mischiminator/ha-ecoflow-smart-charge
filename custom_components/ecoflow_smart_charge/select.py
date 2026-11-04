@@ -22,4 +22,4 @@ class ModeSelect(RuntimeEntity, SelectEntity):
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    async_add_entities([ModeSelect(entry, "mode", "Controller mode")])
+    async_add_entities([ModeSelect(entry, "mode")])

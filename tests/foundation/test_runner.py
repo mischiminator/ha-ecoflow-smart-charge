@@ -1,23 +1,12 @@
-"""Test the real local test entry point, without Home Assistant fixtures."""
+"""Plain pytest runs offline, the same way locally and in CI."""
 
-import subprocess
-import sys
-import unittest
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-RUNNER = ROOT / "tools" / "run_tests.py"
 
 
-class RunnerTests(unittest.TestCase):
-    def test_runner_invokes_pytest_from_an_unrelated_directory(self):
-        self.assertTrue(RUNNER.is_file(), "reproducible test entry point is missing")
-        result = subprocess.run(
-            [sys.executable, str(RUNNER), "--version"],
-            cwd=ROOT.parent,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("pytest", result.stdout)
+def test_pytest_disables_ip_sockets_by_default():
+    options = tomllib.loads((ROOT / "pyproject.toml").read_text())["tool"]["pytest"]["ini_options"]
+    assert "--disable-socket" in options["addopts"]
+    assert "--allow-unix-socket" in options["addopts"]

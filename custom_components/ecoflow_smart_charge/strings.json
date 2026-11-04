@@ -37,7 +37,6 @@
     },
     "error": {
       "battery_count_invalid": "Select at least one EcoFlow battery (at most 10), each only once.",
-      "duplicate_reserves": "Each battery entity must be distinct.",
       "source_invalid": "Missing, unavailable, wrong or duplicate source, or empty tariff key.",
       "unit_invalid": "Source unit or value is invalid.",
       "device_entities_missing": "A selected device or entry lacks a required entity (SOC, reserve, Self-powered, charge/discharge energy, PV power, grid energy, forecast, price or best-price window), or it is disabled."
@@ -57,19 +56,16 @@
           "mode": "Controller mode",
           "minimum_price_advantage_percent": "Minimum price advantage (%)",
           "charge_ceiling_ct": "Charge price ceiling (ct/kWh)",
-          "master": "Allow price charging",
+          "master": "Price charging enabled",
           "efficiency": "Total efficiency (fraction 0..1)",
-          "wear_cost_ct": "Wear (ct/kWh delivered)",
+          "wear_cost_ct": "Wear cost (ct/kWh delivered)",
           "minimum_net_saving_ct": "Minimum net saving (ct/kWh delivered)",
           "capacity_kwh": "Fallback capacity per battery (unknown models, kWh)"
         }
       }
     },
     "error": {
-      "invalid_setting": "Invalid or non-finite setting outside supported bounds.",
-      "invalid_master": "Master must be a boolean.",
-      "invalid_mode": "Mode must be shadow or active.",
-      "unknown_setting": "Unknown setting."
+      "invalid_setting": "Invalid or non-finite setting outside supported bounds."
     }
   },
   "services": {

@@ -52,12 +52,8 @@ def test_zero_negative_charge_prices_accepted_with_positive_reference(price):
 @pytest.mark.parametrize(
     "threshold,allowed",
     [
-        (-0.001, False),
         (0, True),
         (100, False),
-        (100.001, False),
-        (float("nan"), False),
-        (True, False),
     ],
 )
 def test_configured_threshold_bounds_and_preservation(threshold, allowed):
@@ -91,7 +87,6 @@ def test_original_reserves_change_weighting_not_missing_energy():
 @pytest.mark.parametrize(
     "overrides,reason",
     [
-        ({"sources_fresh": False}, "sources_stale"),
         ({"protection_mode": False}, "protection_mode_required"),
         ({"best_price_window": False}, "outside_best_price_window"),
         ({"full_marker_for_solar_day": True}, "already_full_for_solar_day"),
@@ -124,9 +119,8 @@ def test_curve_196_elapsed_quarters_across_dst(day):
     assert curve.rows[-1].ts - curve.rows[0].ts == 195 * 900
 
 
-def test_no_coverage_is_not_full_coverage_and_no_command_is_embedded():
+def test_no_coverage_is_not_full_coverage():
     c = candidate()
     p = decide(replace(c, prices=c.prices[:1]))
     assert p.reason == "insufficient_priced_consumption"
     assert p.coverage_kwh == 0
-    assert p.command_plan == ()

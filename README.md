@@ -56,7 +56,7 @@ type: custom:ecoflow-smart-charge-card
 # device_id: only needed with more than one EcoFlow Smart Charge entry
 ```
 
-It shows status and reason, the charge target, price, solar surplus, net saving, the planned grid charge, the current or next best-price window, the total and per-battery level (tap for history). The gear opens the settings; every change is read back from Home Assistant before it counts as saved. German and English.
+It shows status and reason, the charge target, price, solar surplus, net saving, the planned grid charge, the current or next best-price window, the total and per-battery level (tap for history). The gear opens the settings. German and English.
 
 ## Controls
 
@@ -128,7 +128,7 @@ Diagnostics contain only mode, status and recovery state, never entity IDs.
 uv venv --python 3.14.7 .venv
 uv pip sync --python .venv/bin/python --require-hashes requirements-test.lock
 uv pip install --python .venv/bin/python -r requirements-lint.txt
-.venv/bin/python tools/run_tests.py
+.venv/bin/python -m pytest -q
 .venv/bin/python -m ruff check . && .venv/bin/python -m ruff format --check .
 ```
 
