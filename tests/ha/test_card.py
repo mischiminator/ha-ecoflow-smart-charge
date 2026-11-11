@@ -67,3 +67,74 @@ async def test_entities_share_one_service_device_and_status_lists_batteries(hass
     assert [b["reserve_entity"] for b in attributes["batteries"]] == entry.data["reserve_entities"]
     assert attributes["price_window_entity"] == entry.data["price_window_entity"]
     assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize(
+    "language,samples,correction,expected",
+    [
+        ("de", "2", "1", "Verbrauchsprofil: lernt noch (2/14) · PV-Korrektur: ×1,00"),
+        ("de", "3", "0.92", "Verbrauchsprofil: bereit (3/14) · PV-Korrektur: ×0,92"),
+        ("de", "14", "1", "Verbrauchsprofil: bereit (14/14) · PV-Korrektur: ×1,00"),
+        ("de", "15", "1", "Verbrauchsprofil: bereit (15/14) · PV-Korrektur: ×1,00"),
+        ("en", "2", "1", "Consumption profile: still learning (2/14) · PV correction: ×1.00"),
+        ("en", "3", "0.92", "Consumption profile: ready (3/14) · PV correction: ×0.92"),
+        ("de", "0", "unavailable", "Verbrauchsprofil: lernt noch (0/14) · PV-Korrektur: —"),
+    ]
+    + [
+        ("de", value, None, "Verbrauchsprofil: — · PV-Korrektur: —")
+        for value in (
+            None,
+            "unknown",
+            "unavailable",
+            "",
+            " ",
+            "NaN",
+            "Infinity",
+            "bad",
+            "-1",
+            "2.9",
+            "3.1",
+            True,
+            3,
+        )
+    ],
+)
+def test_card_profile_footer(language, samples, correction, expected):
+    """Execute the bundled JS with HA states, including missing and malformed counts."""
+    import json
+    import subprocess
+    from pathlib import Path
+
+    card = (
+        Path(__file__).resolve().parents[2]
+        / "custom_components/ecoflow_smart_charge/frontend/ecoflow-smart-charge-card.js"
+    )
+    script = """
+const fs = require('node:fs');
+const vm = require('node:vm');
+const [path, language, samples, correction] = JSON.parse(fs.readFileSync(0, 'utf8'));
+const context = vm.createContext({
+  HTMLElement: class {}, window: {},
+  customElements: {get: () => true},
+});
+vm.runInContext(fs.readFileSync(path, 'utf8'), context);
+context.language = language;
+context.states = {};
+if (samples !== null) context.states['sensor.profile_samples'] = {state: samples};
+if (correction !== null) context.states['sensor.pv_correction'] = {state: correction};
+const result = vm.runInContext(`
+  const card = Object.create(EcoFlowSmartChargeCard.prototype);
+  card._language = language;
+  card._hass = {states};
+  card._profileFooter(EFS_TEXT[language]);
+`, context);
+process.stdout.write(result);
+"""
+    result = subprocess.run(
+        ["node", "-e", script],
+        input=json.dumps([str(card), language, samples, correction]),
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    assert result.stdout == expected

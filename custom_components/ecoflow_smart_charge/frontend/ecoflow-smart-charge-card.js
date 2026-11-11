@@ -60,7 +60,9 @@ const EFS_TEXT = {
     totalUnavailable: 'Gesamtstand nicht verfügbar.',
     reserve: 'Reserve',
     showHistory: 'Verlauf anzeigen',
-    footer: (s, f) => `Profil ${s} Werte/Stunde · PV-Faktor ${f}`,
+    profileReady: 'bereit',
+    profileLearning: 'lernt noch',
+    footer: (s, f) => `Verbrauchsprofil: ${s} · PV-Korrektur: ${f}`,
     planned: t => `Planung ${t}`,
     notPlanned: 'Noch keine Planung',
     toggleOn: 'Preisladung einschalten',
@@ -147,7 +149,9 @@ const EFS_TEXT = {
     totalUnavailable: 'Total level unavailable.',
     reserve: 'Reserve',
     showHistory: 'show history',
-    footer: (s, f) => `Profile ${s} values/hour · PV factor ${f}`,
+    profileReady: 'ready',
+    profileLearning: 'still learning',
+    footer: (s, f) => `Consumption profile: ${s} · PV correction: ${f}`,
     planned: t => `Planned ${t}`,
     notPlanned: 'Not planned yet',
     toggleOn: 'Switch price charging on',
@@ -361,6 +365,19 @@ class EcoFlowSmartChargeCard extends HTMLElement {
   _format(value, digits = 2) {
     return value === null || value === undefined ? '—' : new Intl.NumberFormat(this._language === 'de' ? 'de-DE' : 'en-GB', { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(value);
   }
+  _profileFooter(t) {
+    const raw = this._state('sensor.profile_samples')?.state;
+    const samples = this._number('sensor.profile_samples');
+    // The sensor exposes min(samples_by_hour); the planner requires >= 3 in
+    // every hourly bucket over 14 complete days. Missing/malformed counts cannot be ready.
+    const validCount = typeof raw === 'string' && raw.trim() !== ''
+      && Number.isInteger(samples) && samples >= 0;
+    const profile = validCount
+      ? `${samples >= 3 ? t.profileReady : t.profileLearning} (${this._format(samples, 0)}/14)`
+      : '—';
+    const correction = this._number('sensor.pv_correction');
+    return t.footer(profile, correction === null ? '—' : `×${this._format(correction)}`);
+  }
   _metric(id, value, unit, digits = 2) {
     const el = this._refs[id];
     el.replaceChildren(document.createTextNode(this._format(value, digits)));
@@ -463,7 +480,7 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     this._metric('total', complete && capacity ? stored / capacity : null, '%', 1);
     this._refs['total-detail'].textContent = complete ? t.totalDetail : t.totalUnavailable;
 
-    this._refs['footer-profile'].textContent = t.footer(this._format(this._number('sensor.profile_samples'), 0), this._format(this._number('sensor.pv_correction')));
+    this._refs['footer-profile'].textContent = this._profileFooter(t);
     const planned = Date.parse(this._state('sensor.plan_updated')?.state);
     this._refs['footer-updated'].textContent = Number.isFinite(planned)
       ? t.planned(new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone }).format(new Date(planned)))
