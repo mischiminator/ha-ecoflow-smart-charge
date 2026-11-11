@@ -3,6 +3,13 @@
 Releases are created by pushing a `vX.Y.Z` tag; the release workflow checks the tag against
 `manifest.json`, `pyproject.toml` and this file and publishes the section below as release notes.
 
+## [1.0.7] - 2026-11-11
+
+### Changed
+- The dashboard card now labels the consumption profile as ready from three historical samples per hourly bucket, or still learning below that threshold. The footer includes the minimum sample count against the 14-day history window, for example "Verbrauchsprofil: bereit (3/14)".
+- The solar forecast adjustment is now shown as "PV-Korrektur: ×0,92", with matching English text and locale-specific number formatting. Missing or invalid profile counts are shown as unavailable instead of implying readiness.
+- Charging decisions, planning thresholds and device controls are unchanged.
+
 ## [1.0.6] - 2026-11-04
 
 ### Fixed
