@@ -11,6 +11,14 @@ from homeassistant.helpers import selector
 
 from .const import DOMAIN
 from .planner.core import MAX_BATTERIES
+from .settings import (
+    CHARGING_POLICIES,
+    NEW_ENTRY_OPTIONS,
+    SETTINGS,
+    SETTINGS_MODES,
+    effective_settings,
+    merge_settings,
+)
 
 SINGLES = (
     "grid_energy_entity",
@@ -39,14 +47,6 @@ FIELDS = (
     "pv_entity",
     "tariff_key",
 )
-SETTINGS = {
-    "minimum_price_advantage_percent": (20.0, 0, 100),
-    "charge_ceiling_ct": (32.0, -100, 1000),
-    "efficiency": (0.85, 0.01, 1),
-    "wear_cost_ct": (2.0, 0, 100),
-    "minimum_net_saving_ct": (3.0, 0, 1000),
-    "capacity_kwh": (1.92, 0.01, 100),
-}
 MODES = ("shadow", "active")
 
 
@@ -65,7 +65,10 @@ def validate_settings(values):
         raise ValueError("invalid_master")
     if values.get("mode", "shadow") not in MODES:
         raise ValueError("invalid_mode")
-    if set(values) - set(SETTINGS) - {"master", "mode"}:
+    for key, choices in (("settings_mode", SETTINGS_MODES), ("charging_policy", CHARGING_POLICIES)):
+        if key in values and (not isinstance(values[key], str) or values[key] not in choices):
+            raise ValueError("invalid_setting")
+    if set(values) - set(SETTINGS) - {"master", "mode", "settings_mode", "charging_policy"}:
         raise ValueError("unknown_setting")
     return dict(values)
 
@@ -217,7 +220,9 @@ class EcoFlowSmartChargeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     for e in self._async_current_entries()
                 ):
                     return self.async_abort(reason="already_configured")
-                return self.async_create_entry(title=data["name"], data=data)
+                return self.async_create_entry(
+                    title=data["name"], data=data, options=NEW_ENTRY_OPTIONS
+                )
         homes, suggested = await suggestions(self.hass)
         return self.async_show_form(
             step_id="user",
@@ -278,19 +283,68 @@ class EcoFlowSmartChargeOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             try:
                 validate_settings(user_input)
-                return self.async_create_entry(
-                    title="", data={**self.config_entry.options, **user_input}
-                )
+                if set(user_input) != {"settings_mode"}:
+                    raise ValueError("invalid_setting")
+                self._settings_mode = user_input["settings_mode"]
+                return await self.async_step_settings()
             except ValueError as err:
                 errors["base"] = str(err)
-        schema = {
-            vol.Optional("master", default=self.config_entry.options.get("master", False)): bool,
-            vol.Optional("mode", default=self.config_entry.options.get("mode", "shadow")): vol.In(
-                MODES
+        current = effective_settings(self.config_entry.options)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        "settings_mode", default=current["settings_mode"]
+                    ): selector.SelectSelector(
+                        selector.SelectSelectorConfig(
+                            options=list(SETTINGS_MODES), translation_key="settings_mode"
+                        )
+                    ),
+                }
             ),
+            errors=errors,
+        )
+
+    async def async_step_settings(self, user_input=None):
+        errors = {}
+        simple = self._settings_mode == "simple"
+        allowed = set() if simple else set(SETTINGS)
+        allowed |= {"master", "mode"}
+        if simple:
+            allowed.add("charging_policy")
+        if user_input is not None:
+            try:
+                if set(user_input) - allowed:
+                    raise ValueError("unknown_setting")
+                options = merge_settings(
+                    self.config_entry.options,
+                    {
+                        **user_input,
+                        "settings_mode": self._settings_mode,
+                    },
+                )
+                return self.async_create_entry(title="", data=options)
+            except ValueError as err:
+                errors["base"] = str(err)
+        current = {**{key: spec[0] for key, spec in SETTINGS.items()}, **self.config_entry.options}
+        schema = {
+            vol.Optional("master", default=current.get("master", False)): bool,
+            vol.Optional("mode", default=current.get("mode", "shadow")): vol.In(MODES),
         }
-        for key, (default, lo, hi) in SETTINGS.items():
-            schema[vol.Optional(key, default=self.config_entry.options.get(key, default))] = (
-                vol.All(vol.Coerce(float), vol.Range(min=lo, max=hi))
+        if simple:
+            schema[
+                vol.Optional("charging_policy", default=current.get("charging_policy", "balanced"))
+            ] = selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=list(CHARGING_POLICIES), translation_key="charging_policy"
+                )
             )
-        return self.async_show_form(step_id="init", data_schema=vol.Schema(schema), errors=errors)
+        for key, (_, lo, hi) in SETTINGS.items():
+            if key in allowed:
+                schema[vol.Optional(key, default=current[key])] = vol.All(
+                    vol.Coerce(float), vol.Range(min=lo, max=hi)
+                )
+        return self.async_show_form(
+            step_id="settings", data_schema=vol.Schema(schema), errors=errors
+        )

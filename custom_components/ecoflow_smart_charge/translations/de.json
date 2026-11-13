@@ -50,6 +50,15 @@
   "options": {
     "step": {
       "init": {
+        "title": "Einstellungsmodus",
+        "data": {
+          "settings_mode": "Einstellungsmodus"
+        },
+        "data_description": {
+          "settings_mode": "Einfach blendet wirtschaftliche Schwellenwerte aus. Erweiterte Werte bleiben gespeichert."
+        }
+      },
+      "settings": {
         "title": "Steuerungsoptionen",
         "description": "Shadow berechnet den Plan ohne Gerätebefehle; Aktiv steuert die Akkureserven.",
         "data": {
@@ -60,7 +69,11 @@
           "efficiency": "Gesamtwirkungsgrad (Anteil 0..1)",
           "wear_cost_ct": "Verschleißkosten (ct/kWh geliefert)",
           "minimum_net_saving_ct": "Mindestnettoersparnis (ct/kWh geliefert)",
-          "capacity_kwh": "Rückfall-Kapazität je Akku (unbekannte Modelle, kWh)"
+          "capacity_kwh": "Rückfall-Kapazität je Akku (unbekannte Modelle, kWh)",
+          "charging_policy": "Ladestrategie"
+        },
+        "data_description": {
+          "charging_policy": "Mehr sparen: lädt schon bei kleiner erwarteter Ersparnis. Ausgewogen: lädt bei deutlicher erwarteter Ersparnis nach Ladeverlusten und Akkuverschleiß (Standard). Akku schonen: lädt nur bei besonders großer erwarteter Ersparnis. Die Ersparnis wird geschätzt und ist nicht garantiert. Technische Werte bleiben wirksam und sind unter Erweitert einstellbar."
         }
       }
     },
@@ -180,11 +193,41 @@
           "shadow": "Shadow",
           "active": "Aktiv"
         }
+      },
+      "settings_mode": {
+        "name": "Einstellungsmodus",
+        "state": {
+          "simple": "Einfach",
+          "advanced": "Erweitert"
+        }
+      },
+      "charging_policy": {
+        "name": "Ladestrategie",
+        "state": {
+          "save_more": "Mehr sparen",
+          "balanced": "Ausgewogen",
+          "protect_battery": "Akku schonen"
+        }
       }
     },
     "button": {
       "recalculate": {
         "name": "Plan neu berechnen"
+      }
+    }
+  },
+  "selector": {
+    "settings_mode": {
+      "options": {
+        "simple": "Einfach",
+        "advanced": "Erweitert"
+      }
+    },
+    "charging_policy": {
+      "options": {
+        "save_more": "Mehr sparen",
+        "balanced": "Ausgewogen",
+        "protect_battery": "Akku schonen"
       }
     }
   }

@@ -16,6 +16,7 @@ from homeassistant.util import dt as dt_util
 
 from .entity import RuntimeEntity
 from .planner.forecast import solar_day
+from .settings import effective_settings
 from .sources import OWN_PV_KEY
 from .storage import finite
 
@@ -85,7 +86,10 @@ class PlanSensor(RuntimeEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         if self.key == "status":
-            return card_sources(self.hass, self.entry.data)
+            return {
+                **card_sources(self.hass, self.entry.data),
+                "effective_settings": effective_settings(self.entry.options),
+            }
         if self.key == "reason":
             # Which source blocks planning, e.g. "ValueError: source_stale: number.x".
             snapshot = self.runtime.last_snapshot or {}

@@ -149,9 +149,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ]
     )
 
-    async def updated(_hass, updated_entry):
-        if runtime.applied_options != dict(updated_entry.options):
-            await hass.config_entries.async_reload(updated_entry.entry_id)
+    async def updated(_hass, _updated_entry):
+        await runtime.async_apply_options()
 
     entry.async_on_unload(entry.add_update_listener(updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
