@@ -3,6 +3,21 @@
 Releases are created by pushing a `vX.Y.Z` tag; the release workflow checks the tag against
 `manifest.json`, `pyproject.toml` and this file and publishes the section below as release notes.
 
+## [1.1.0] - 2026-11-13
+
+### Added
+- Simple and Advanced settings in both the dashboard card and the integration's Configure dialog. Simple offers three charging strategies: Save more / Mehr sparen, Balanced / Ausgewogen and Protect battery / Akku schonen, with plain-language descriptions instead of numerical inputs.
+- Charging strategies use minimum expected net benefits of 1, 3 and 6 ct/kWh respectively, after the planner's loss and wear assumptions. The integration applies these thresholds automatically in Simple mode.
+- Separate Settings mode and Charging policy selection entities, plus effective planner settings in the controller status attributes.
+
+### Changed
+- New installations start with Simple / Balanced. Existing installations retain their previous numerical settings in Advanced; switching modes preserves saved custom values. Editing an economic threshold directly selects Advanced so the change takes effect.
+- The settings dialog stacks dropdown controls on narrow screens and uses larger strategy descriptions for easier reading.
+
+### Fixed
+- Integration settings are applied in place, preventing strategy changes during charging from interrupting the session and blocking future charging until restart.
+- Concurrent native and entity setting writes preserve newer unrelated options and apply pending control-mode transitions, including edits received during restoration.
+
 ## [1.0.7] - 2026-11-11
 
 ### Changed
