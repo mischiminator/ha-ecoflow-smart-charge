@@ -65,12 +65,28 @@ It shows status and reason, the charge target, price, solar surplus, net saving,
 | **Controller mode** (select) | `shadow` plans only · `active` controls the reserves |
 | **Price charging enabled** (switch) | Master permission. Off stops new charging and restores the saved reserves. |
 | **Recalculate plan** (button) | Plan now (also `ecoflow_smart_charge.recalculate` with `config_entry_id`) |
-| Minimum price advantage | default 20 % |
+| **Settings mode** (select) | `simple` or `advanced`; independent of Controller mode |
+| **Charging policy** (select) | Save more, Balanced, Protect battery |
+| Minimum price advantage | advanced default 20 %; simple uses 0 % |
 | Charge price ceiling | default 32 ct/kWh |
-| Minimum net saving | default 3 ct/kWh |
+| Minimum net saving | advanced default 3 ct/kWh; simple uses the selected policy |
 | Total efficiency | default 0.85 |
 | Wear cost | default 2 ct/kWh |
 | Fallback capacity | for battery models without a known capacity (default 1.92 kWh) |
+
+### Simple and advanced settings
+
+New entries start in **Simple / Balanced** (`settings_mode: simple`, `charging_policy: balanced`), with price charging off and Controller mode in shadow. Choose the settings mode and charging policy through the card's gear or **Settings → Devices & services → EcoFlow Smart Charge → Configure**. The native options dialog first asks for the settings mode, then shows the applicable fields. Simple shows only price-charging permission, Controller mode and the charging policy, without numerical inputs; Advanced reveals all saved numerical controls.
+
+| Simple policy | German label | Minimum net benefit per delivered kWh |
+|---|---|---|
+| Save more (`save_more`) | Mehr sparen | 1 ct/kWh: small positive net benefit |
+| Balanced (`balanced`, default) | Ausgewogen | 3 ct/kWh: clear net benefit |
+| Protect battery (`protect_battery`) | Akku schonen | 6 ct/kWh: larger net benefit |
+
+These thresholds are **heuristics**, not measured savings or guarantees. All simple policies use `minimum_price_advantage_percent: 0`. The existing planner still accounts for efficiency and wear per delivered kWh; there is no euro-per-session calculation. The price ceiling, capacity and model assumptions remain effective and can be edited in Advanced, and solar, data validity and session/restore safeguards still apply. A policy choice does not change master permission or shadow/active mode and sends no hardware command.
+
+Existing entries without `settings_mode` use **Advanced** as a legacy fallback and keep their previous numerical behavior. Selecting Simple applies its policy only to the effective planner settings: it never overwrites saved advanced thresholds. Switching back restores those exact values, including custom values. Native number entities display the saved advanced thresholds; editing either economic threshold automatically switches to Advanced so the edit takes effect. Other physical/model settings do not switch the mode. Card and native options changes persist in the entry's normal options and are applied under the controller's settings lock without reloading it. A settings-mode or policy-only save preserves an ongoing charging session and its timers. Turning price charging off or switching to shadow uses the normal guarded stop/restoration path.
 
 Key sensors: **Decision reason**, **Grid charge target**, **Grid charge energy**, **Missing energy**, **Solar surplus**, **Net saving**, **Price advantage**, **PV correction**.
 

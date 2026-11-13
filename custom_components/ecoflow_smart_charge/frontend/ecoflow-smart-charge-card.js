@@ -71,6 +71,13 @@ const EFS_TEXT = {
     dialogTitle: 'Preisladung konfigurieren',
     close: 'Schließen',
     intro: 'Änderungen werden erst mit „Speichern“ übernommen. Die Solar- und Wirtschaftlichkeitsprüfung bleibt immer aktiv.',
+    settingsMode: 'Einstellungsmodus',
+    settingsModes: {simple: 'Einfach', advanced: 'Erweitert'},
+    chargingPolicy: 'Ladestrategie',
+    policies: {save_more: 'Mehr sparen', balanced: 'Ausgewogen', protect_battery: 'Akku schonen'},
+    policyDescriptions: {save_more: 'Lädt bereits bei einer kleinen erwarteten Ersparnis.', balanced: 'Lädt nur, wenn nach Ladeverlusten und Akkuverschleiß eine deutliche Ersparnis erwartet wird (Standard).', protect_battery: 'Lädt nur bei besonders großer erwarteter Ersparnis.'},
+    heuristic: 'Die Ersparnis wird geschätzt und ist nicht garantiert.',
+    simplePrice: c => `Max. Ladepreis ${c} ct/kWh`,
     master: 'Preisladung erlaubt',
     mode: 'Steuerungsmodus',
     modes: { shadow: 'Shadow – nur planen', active: 'Aktiv – Reserven steuern' },
@@ -160,6 +167,13 @@ const EFS_TEXT = {
     dialogTitle: 'Configure price charging',
     close: 'Close',
     intro: 'Changes apply only after “Save”. The solar and economic checks always stay active.',
+    settingsMode: 'Settings mode',
+    settingsModes: {simple: 'Simple', advanced: 'Advanced'},
+    chargingPolicy: 'Charging policy',
+    policies: {save_more: 'Save more', balanced: 'Balanced', protect_battery: 'Protect battery'},
+    policyDescriptions: {save_more: 'Charge even for a small positive net benefit.', balanced: 'Charge for a clear net benefit (default).', protect_battery: 'Charge only for a larger net benefit.'},
+    heuristic: 'Savings are estimated and are not guaranteed.',
+    simplePrice: c => `Price ceiling ${c} ct/kWh`,
     master: 'Price charging enabled',
     mode: 'Controller mode',
     modes: { shadow: 'Shadow – plan only', active: 'Active – control reserves' },
@@ -289,7 +303,7 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     this._batterySignature = null;
     this.shadowRoot.innerHTML = `<style>
       :host{display:block;min-width:0;font-family:var(--ha-font-family,Roboto,Arial,sans-serif);color:var(--primary-text-color,#202124)}
-      *{box-sizing:border-box}ha-card{display:block;overflow:hidden;background:var(--ha-card-background,var(--card-background-color,#fff));border:var(--ha-card-border-width,1px) solid var(--ha-card-border-color,var(--divider-color,#ddd));border-radius:var(--ha-card-border-radius,16px);box-shadow:var(--ha-card-box-shadow,none)}
+      [hidden]{display:none!important}*{box-sizing:border-box}ha-card{display:block;overflow:hidden;background:var(--ha-card-background,var(--card-background-color,#fff));border:var(--ha-card-border-width,1px) solid var(--ha-card-border-color,var(--divider-color,#ddd));border-radius:var(--ha-card-border-radius,16px);box-shadow:var(--ha-card-box-shadow,none)}
       .body{padding:20px}.header{display:flex;align-items:center;gap:12px}.brand{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:color-mix(in srgb,var(--primary-color,#03a9f4) 13%,transparent);color:var(--primary-color,#03a9f4);flex-shrink:0}svg{width:22px;height:22px;fill:currentColor}.brand svg{width:26px;height:26px}
       .heading{flex:1;min-width:0}.title{font-weight:650;font-size:17px;line-height:1.3}.subtitle{font-size:12px;color:var(--secondary-text-color,#687078);margin-top:3px}.subtitle[data-shadow=true]{color:var(--warning-color,#a56a00)}
       .icon-button{border:0;background:transparent;color:var(--secondary-text-color,#687078);height:40px;width:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer;flex-shrink:0}.icon-button:hover{background:var(--secondary-background-color,#f1f3f5)}.icon-button[aria-pressed=true]{color:var(--primary-color,#03a9f4);background:color-mix(in srgb,var(--primary-color,#03a9f4) 10%,transparent)}
@@ -306,7 +320,8 @@ class EcoFlowSmartChargeCard extends HTMLElement {
       .row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px;background:var(--secondary-background-color,#f5f6f7);border-radius:12px;margin-bottom:12px}.row span{font-size:14px;font-weight:600}.row input{width:22px;height:22px;accent-color:var(--primary-color,#03a9f4);cursor:pointer}.row select{min-height:36px;border:1px solid var(--divider-color,#ddd);border-radius:8px;background:var(--card-background-color,#fff);color:inherit;font:inherit;padding:4px 8px}
       .fields{display:grid;grid-template-columns:1fr 1fr;gap:18px 16px;margin-top:18px}.field label{display:block;font-size:13px;font-weight:550;margin-bottom:7px}.input-wrap{display:flex;align-items:center;gap:8px;border:1px solid var(--divider-color,#ddd);border-radius:10px;padding:3px 10px;background:var(--secondary-background-color,#f5f6f7)}.input-wrap input{width:100%;min-width:0;border:0;background:transparent;color:inherit;font:inherit;font-size:17px;padding:9px 0;font-variant-numeric:tabular-nums}.input-wrap span{font-size:12px;color:var(--secondary-text-color,#687078);white-space:nowrap}.hint{font-size:11px;color:var(--secondary-text-color,#687078);line-height:1.5;margin-top:6px}
       .info{font-size:12px;line-height:1.6;margin-top:20px;padding-top:14px;border-top:1px solid var(--divider-color,#ddd);color:var(--secondary-text-color,#687078)}.dialog-footer{display:flex;justify-content:flex-end;gap:10px;padding:14px 22px;background:var(--card-background-color,#fff);border-top:1px solid var(--divider-color,#ddd);position:sticky;bottom:0;z-index:1}.action{min-height:40px;padding:9px 18px;border:1px solid var(--divider-color,#ddd);border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:600;cursor:pointer}.primary{background:var(--primary-color,#03a9f4);border-color:var(--primary-color,#03a9f4);color:var(--text-primary-color,#fff)}.feedback{font-size:12px;line-height:1.5;margin-top:14px;min-height:18px}.feedback[data-error=true]{color:var(--error-color,#c64646)}.feedback[data-error=false]{color:var(--success-color,#268b59)}
-      @media(max-width:450px){.fields{grid-template-columns:1fr}.batteries .value{font-size:19px}.dialog-header{padding:18px}.dialog-body{padding:0 18px 18px}.dialog-footer{padding:12px 18px}.body{padding:16px}.title{font-size:16px}.header{gap:8px}.brand{width:38px;height:38px}.icon-button{width:36px;height:36px}.value{font-size:21px}.footer{padding:12px 16px}.subtitle{font-size:11px}}
+      #policy-description{font-size:14px;line-height:1.5}
+      @media(max-width:450px){.row:has(select){flex-direction:column;align-items:stretch;gap:8px}.row select{min-width:0;max-width:100%}.fields{grid-template-columns:1fr}.batteries .value{font-size:19px}.dialog-header{padding:18px}.dialog-body{padding:0 18px 18px}.dialog-footer{padding:12px 18px}.body{padding:16px}.title{font-size:16px}.header{gap:8px}.brand{width:38px;height:38px}.icon-button{width:36px;height:36px}.value{font-size:21px}.footer{padding:12px 16px}.subtitle{font-size:11px}}
     </style>
     <ha-card><div class="empty" id="empty" hidden></div><div id="content"><div class="body"><div class="header"><div class="brand">${EFS_BOLT}</div><div class="heading"><div class="title" id="title"></div><div class="subtitle" id="subtitle"></div></div><button class="icon-button" id="toggle" aria-pressed="false">${EFS_POWER}</button><button class="icon-button" id="settings" aria-label="${t.settings}" title="${t.settings}">${EFS_GEAR}</button></div>
     <div class="state-line"><span class="badge" id="status">${t.loading}</span><span class="goal" id="goal"></span></div><p class="reason" id="reason"></p>
@@ -322,10 +337,15 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     <dialog id="dialog" aria-labelledby="dialog-title"><form id="form"><div class="dialog-header"><h2 id="dialog-title">${t.dialogTitle}</h2><button type="button" class="icon-button" id="close" aria-label="${t.close}">${EFS_CLOSE}</button></div><div class="dialog-body"><p class="intro">${t.intro}</p>
       <label class="row" for="enabled"><span>${t.master}</span><input type="checkbox" id="enabled"></label>
       <label class="row" for="mode"><span>${t.mode}</span><select id="mode">${Object.entries(t.modes).map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}</select></label>
+      <label class="row" for="settings_mode"><span>${t.settingsMode}</span><select id="settings_mode">${Object.entries(t.settingsModes).map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}</select></label>
+      <label class="row" for="charging_policy"><span>${t.chargingPolicy}</span><select id="charging_policy" aria-describedby="policy-description">${Object.entries(t.policies).map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}</select></label>
+      <p id="policy-description" class="hint"></p>
       <div class="fields">${EFS_FIELDS.map(([key, unit]) => `<div class="field"><label for="field-${key}">${t.fields[key][0]}</label><div class="input-wrap"><input id="field-${key}" type="number" inputmode="decimal" required><span>${unit}</span></div><div class="hint">${t.fields[key][1]}</div></div>`).join('')}</div>
       <div class="info" id="info"></div><div class="feedback" id="feedback" role="status" aria-live="polite"></div></div>
       <div class="dialog-footer"><button type="button" class="action" id="cancel">${t.cancel}</button><button type="submit" class="action primary" id="save">${t.save}</button></div></form></dialog>`;
     this._refs = Object.fromEntries([...this.shadowRoot.querySelectorAll('[id]')].map(n => [n.id, n]));
+    this._refs.settings_mode.addEventListener('change', () => this._settingsVisibility());
+    this._refs.charging_policy.addEventListener('change', () => this._settingsVisibility());
     this._refs.settings.addEventListener('click', () => this._open());
     this._refs.toggle.addEventListener('click', () => this._toggle());
     this._refs['price-tile'].addEventListener('click', () => this._history(this._sources().price_entity));
@@ -436,15 +456,17 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     const priceState = this._state(sources.price_entity);
     let price = this._number(sources.price_entity);
     if (price !== null && /eur|€/i.test(priceState?.attributes?.unit_of_measurement || '')) price *= 100;
-    const ceiling = this._number('number.charge_ceiling_ct'), saving = this._number('sensor.net_saving_ct'), margin = this._number('number.minimum_net_saving_ct');
+    const effective = sources.effective_settings || {};
+    const simple = effective.settings_mode === 'simple';
+    const ceiling = this._number('number.charge_ceiling_ct'), saving = this._number('sensor.net_saving_ct'), margin = effective.minimum_net_saving_ct ?? this._number('number.minimum_net_saving_ct');
     this._metric('price', price, 'ct/kWh');
     this._refs.price.dataset.tone = price !== null && ceiling !== null && price > ceiling ? 'bad' : 'neutral';
-    this._refs['price-detail'].textContent = t.priceDetail(this._format(ceiling, 1), this._format(this._number('sensor.price_advantage_percent'), 1), this._format(this._number('number.minimum_price_advantage'), 0));
+    this._refs['price-detail'].textContent = simple ? t.simplePrice(this._format(ceiling, 1)) : t.priceDetail(this._format(ceiling, 1), this._format(this._number('sensor.price_advantage_percent'), 1), this._format(this._number('number.minimum_price_advantage'), 0));
     this._refs['price-tile'].title = `${t.price} – ${t.showHistory}`;
     this._metric('solar', this._number('sensor.solar_surplus_kwh'), 'kWh');
     this._metric('saving', saving, 'ct/kWh');
     this._refs.saving.dataset.tone = saving !== null && margin !== null && saving >= margin ? 'good' : saving !== null && saving < 0 ? 'bad' : 'neutral';
-    this._refs['saving-detail'].textContent = t.savingDetail(this._format(margin, 1));
+    this._refs['saving-detail'].textContent = simple ? (t.policies[effective.charging_policy] || '') + ' · ' + t.heuristic : t.savingDetail(this._format(margin, 1));
     this._metric('grid', grid, 'kWh');
     this._refs['grid-detail'].textContent = t.gridDetail(this._format(this._number('sensor.missing_energy_kwh')), this._format(this._number('sensor.corrected_forecast_kwh')));
 
@@ -532,6 +554,12 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     if (!['on', 'off'].includes(enabled) || !['shadow', 'active'].includes(mode)) { this._refs['card-error'].textContent = t.settingsUnavailable('switch/select'); return; }
     this._snapshot.enabled = enabled === 'on';
     this._snapshot.mode = mode;
+    for (const [key, fallback] of [['settings_mode', 'advanced'], ['charging_policy', 'balanced']]) {
+      const value = this._state('select.' + key)?.state || fallback;
+      this._snapshot[key] = value;
+      this._refs[key].value = value;
+    }
+    this._settingsVisibility();
     this._refs.enabled.checked = this._snapshot.enabled;
     this._refs.mode.value = mode;
     this._refs.info.textContent = t.info(this._format(this._number('sensor.pv_correction')));
@@ -540,6 +568,19 @@ class EcoFlowSmartChargeCard extends HTMLElement {
     this._refs.cancel.textContent = t.cancel;
     this._refs.dialog.showModal();
     this._refs.enabled.focus();
+  }
+
+  _settingsVisibility() {
+    const simple = this._refs.settings_mode.value === 'simple';
+    for (const [key] of EFS_FIELDS) {
+      const input = this._refs['field-' + key];
+      input.hidden = simple;
+      input.disabled = simple;
+      input.closest('.field').hidden = simple;
+    }
+    this._refs.charging_policy.closest('.row').hidden = !simple;
+    this._refs['policy-description'].hidden = !simple;
+    this._refs['policy-description'].textContent = (this._t.policyDescriptions[this._refs.charging_policy.value] || '') + ' ' + this._t.heuristic;
   }
 
   _close() { if (!this._saving) this._refs.dialog.close(); }
@@ -568,8 +609,11 @@ class EcoFlowSmartChargeCard extends HTMLElement {
   async _save() {
     const t = this._t;
     if (this._saving || !this._refs.form.reportValidity()) return;
+    const settingsMode = this._refs.settings_mode.value, policy = this._refs.charging_policy.value;
+    if (!['simple', 'advanced'].includes(settingsMode) || !Object.hasOwn(t.policies, policy)) { this._feedback(t.invalidNumbers, true); return; }
     const edits = [];
     for (const [key, , scale] of EFS_FIELDS) {
+      if (settingsMode === 'simple') continue;
       const value = Number(this._refs[`field-${key}`].value) / scale;
       if (!Number.isFinite(value)) { this._feedback(t.invalidNumbers, true); return; }
       if (Math.abs(value - this._snapshot[key]) > 1e-9) edits.push([key, +value.toFixed(6)]);
@@ -585,6 +629,12 @@ class EcoFlowSmartChargeCard extends HTMLElement {
       if (enabled !== this._snapshot.enabled && !enabled) { await this._call('switch', 'turn_off', this._id('switch.master')); this._snapshot.enabled = false; applied++; }
       if (mode !== this._snapshot.mode && mode === 'shadow') { await this._call('select', 'select_option', this._id('select.mode'), { option: mode }); this._snapshot.mode = mode; applied++; }
       for (const [key, value] of edits) { await this._call('number', 'set_value', this._id('number.' + key), { value }); this._snapshot[key] = value; applied++; }
+      for (const [key, value] of [['charging_policy', policy], ['settings_mode', settingsMode]]) {
+        if (value !== this._snapshot[key]) {
+          await this._call('select', 'select_option', this._id('select.' + key), {option: value});
+          this._snapshot[key] = value; applied++;
+        }
+      }
       if (mode !== this._snapshot.mode) { await this._call('select', 'select_option', this._id('select.mode'), { option: mode }); this._snapshot.mode = mode; applied++; }
       if (enabled !== this._snapshot.enabled) { await this._call('switch', 'turn_on', this._id('switch.master')); this._snapshot.enabled = true; applied++; }
       this._feedback(applied ? t.saved : t.noChanges);
@@ -595,6 +645,7 @@ class EcoFlowSmartChargeCard extends HTMLElement {
       this._saving = false;
       this._refs.save.textContent = t.save;
       this.shadowRoot.querySelectorAll('dialog button,dialog input,dialog select').forEach(e => { e.disabled = false; });
+      this._settingsVisibility();
       this._update();
     }
   }

@@ -8,7 +8,6 @@ from datetime import UTC, datetime, timedelta
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util import dt as dt_util
 
-from .config_flow import SETTINGS
 from .planner.core import (
     MAX_BATTERIES,
     PRICE_MAX_AGE,
@@ -19,6 +18,7 @@ from .planner.core import (
     decide,
 )
 from .planner.forecast import solar_day as forecast_solar_day
+from .settings import effective_settings
 from .storage import finite
 
 _LOGGER = logging.getLogger(__name__)
@@ -207,8 +207,7 @@ class SourceReader:
     async def refresh(self):
         now = dt_util.now()
         data = self.data
-        defaults = {key: spec[0] for key, spec in SETTINGS.items()}
-        settings = {**defaults, **self.entry.options, **self.settings}
+        settings = effective_settings({**self.entry.options, **self.settings})
         gate = {
             "master": settings.get("master", False),
             "allowed": False,

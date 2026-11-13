@@ -50,6 +50,15 @@
   "options": {
     "step": {
       "init": {
+        "title": "Settings mode",
+        "data": {
+          "settings_mode": "Settings mode"
+        },
+        "data_description": {
+          "settings_mode": "Simple hides economic thresholds. Advanced values remain saved."
+        }
+      },
+      "settings": {
         "title": "Controller options",
         "description": "Shadow calculates the plan without device commands; active controls the battery reserves.",
         "data": {
@@ -60,7 +69,11 @@
           "efficiency": "Total efficiency (fraction 0..1)",
           "wear_cost_ct": "Wear cost (ct/kWh delivered)",
           "minimum_net_saving_ct": "Minimum net saving (ct/kWh delivered)",
-          "capacity_kwh": "Fallback capacity per battery (unknown models, kWh)"
+          "capacity_kwh": "Fallback capacity per battery (unknown models, kWh)",
+          "charging_policy": "Charging policy"
+        },
+        "data_description": {
+          "charging_policy": "Save more: charge even for a small expected saving. Balanced: charge for a clear expected saving after losses and battery wear (default). Protect battery: charge only for a particularly large expected saving. Savings are estimated and are not guaranteed. Technical settings remain effective and can be edited in Advanced."
         }
       }
     },
@@ -180,11 +193,41 @@
           "shadow": "Shadow",
           "active": "Active"
         }
+      },
+      "settings_mode": {
+        "name": "Settings mode",
+        "state": {
+          "simple": "Simple",
+          "advanced": "Advanced"
+        }
+      },
+      "charging_policy": {
+        "name": "Charging policy",
+        "state": {
+          "save_more": "Save more",
+          "balanced": "Balanced",
+          "protect_battery": "Protect battery"
+        }
       }
     },
     "button": {
       "recalculate": {
         "name": "Recalculate plan"
+      }
+    }
+  },
+  "selector": {
+    "settings_mode": {
+      "options": {
+        "simple": "Simple",
+        "advanced": "Advanced"
+      }
+    },
+    "charging_policy": {
+      "options": {
+        "save_more": "Save more",
+        "balanced": "Balanced",
+        "protect_battery": "Protect battery"
       }
     }
   }

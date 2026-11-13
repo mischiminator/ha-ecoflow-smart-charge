@@ -46,6 +46,7 @@ class Runtime:
         self.cancels = []
         self.listeners = set()
         self.last_error = None
+        self.applied_options = {}
 
     def subscribe(self, callback):
         self.listeners.add(callback)
@@ -236,23 +237,68 @@ class Runtime:
             self.notify()
 
     async def async_set_setting(self, key, value):
-        from .config_flow import validate_settings
+        from .settings import merge_settings
 
-        validate_settings({key: value})
+        merge_settings(self.entry.options, {key: value})
         async with self._lock:
+            await self._async_apply_current_options()
             try:
-                stopping = (key == "master" and not value) or (key == "mode" and value == "shadow")
-                if stopping and self.mode == "active" and self.journal.record:
-                    # Restore under active control first; shadow never writes.
-                    await self._restore()
+                while True:
+                    before = dict(self.entry.options)
+                    options = merge_settings(before, {key: value})
+                    await self._async_apply_options(options, {key: value})
+                    if self.entry.options == before:
+                        break
+                    # Native flows persist outside our lock, even while restore
+                    # awaits transport. Apply their transitions before rebasing
+                    # the entity delta; never persist the pre-await snapshot.
+                    await self._async_apply_current_options()
             finally:
-                if key == "mode":
-                    self.mode = value
-                    self.status = self._idle_status()
-                options = {**self.entry.options, key: value}
-                self.applied_options = dict(options)
-                self.hass.config_entries.async_update_entry(self.entry, options=options)
+                # Keep stop persistence on restore failure/cancellation. There
+                # is no yield between reading live options and saving the delta.
+                # On failure, applied_options still describes only the attempted
+                # transition; pending native edits are left for their listener.
+                self.hass.config_entries.async_update_entry(
+                    self.entry, options=merge_settings(self.entry.options, {key: value})
+                )
                 self.notify()
+
+    async def async_apply_options(self):
+        """Apply native options without unloading a live controller or its journal."""
+        async with self._lock:
+            await self._async_apply_current_options()
+
+    async def _async_apply_current_options(self):
+        # Read after acquiring the lock: queued listeners must not replay stale
+        # options over newer writes. Entity writes must apply pending native
+        # control transitions before marking their merged options as applied.
+        while (options := dict(self.entry.options)) != self.applied_options:
+            changes = {
+                key: options.get(key)
+                for key in self.applied_options.keys() | options.keys()
+                if self.applied_options.get(key) != options.get(key)
+            }
+            await self._async_apply_options(options, changes)
+            # A native save does not acquire this lock. Restoration may have
+            # yielded to another save; settle every live transition before
+            # releasing the lock, not just the snapshot that started this call.
+
+    async def _async_apply_options(self, options, changes):
+        """Shared settings transition, called only under the runtime lock."""
+        try:
+            stopping = ("master" in changes and not changes["master"]) or (
+                changes.get("mode") == "shadow"
+            )
+            if stopping and self.mode == "active" and self.journal.record:
+                # Preserve the existing stop contract: issue restoration while
+                # active; shadow retains pending readback but never writes.
+                await self._restore()
+        finally:
+            if "mode" in changes:
+                self.mode = options.get("mode", "shadow")
+                self.status = self._idle_status()
+            self.applied_options = dict(options)
+            self.notify()
 
     async def async_close(self, *, final=False):
         async with self._lock:

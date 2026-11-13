@@ -141,6 +141,9 @@ async def test_valid_flow_starts_in_shadow_and_options_select_mode(hass):
     await hass.async_block_till_done()
     assert entry.runtime_data.mode == "shadow"
     options = await hass.config_entries.options.async_init(entry.entry_id)
+    options = await hass.config_entries.options.async_configure(
+        options["flow_id"], {"settings_mode": "simple"}
+    )
     from homeassistant.data_entry_flow import InvalidData
 
     with pytest.raises(InvalidData):
@@ -148,6 +151,9 @@ async def test_valid_flow_starts_in_shadow_and_options_select_mode(hass):
             options["flow_id"], user_input={"mode": "armed"}
         )
     options = await hass.config_entries.options.async_init(entry.entry_id)
+    options = await hass.config_entries.options.async_configure(
+        options["flow_id"], {"settings_mode": "simple"}
+    )
     result = await hass.config_entries.options.async_configure(
         options["flow_id"], user_input={"mode": "active"}
     )
